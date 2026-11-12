@@ -213,17 +213,12 @@ export class BeeService {
       await connectDB();
 
       const customerFare = Math.round(input.customerFare);
-      const breakdown = calculateBeFareBreakdown(
-        customerFare,
-        input.platformFee,
-        input.taxTncn
-      );
-      const platformFee = breakdown.platformFee;
-      const taxTncn = breakdown.taxTncn;
+      const platformFee = Math.round(input.platformFee || 0);
+      const taxTncn = Math.round(input.taxTncn || 0);
       const driverEarnings =
         input.driverEarnings !== undefined && input.driverEarnings > 0
           ? Math.round(input.driverEarnings)
-          : breakdown.driverEarnings;
+          : Math.max(0, customerFare - platformFee - taxTncn);
 
       // Lấy vai trò user: nếu Admin thêm thì duyệt ngay, User gửi lên thì chờ Admin xét duyệt
       const userDoc = await User.findById(userId).select("role").lean();

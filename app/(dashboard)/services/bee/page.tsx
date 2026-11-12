@@ -132,6 +132,7 @@ function BeeOrdersPageContent() {
   const [platformFee, setPlatformFee] = React.useState<string>("");
   const [taxTncn, setTaxTncn] = React.useState<string>("");
   const [driverEarnings, setDriverEarnings] = React.useState<string>("");
+  const [showDetailedFees, setShowDetailedFees] = React.useState(false);
   const [tip, setTip] = React.useState<string>("0");
   const [tripCount, setTripCount] = React.useState<string>("1");
   const [distanceKm, setDistanceKm] = React.useState<string>("");
@@ -396,17 +397,21 @@ function BeeOrdersPageContent() {
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    const fareNum = parseInt(customerFare.replace(/\D/g, ""), 10);
-    if (!fareNum || fareNum <= 0) {
-      toast.error("Vui lòng nhập cước phí");
+    const earningsNum =
+      parseInt(driverEarnings.replace(/\D/g, ""), 10) ||
+      parseInt(customerFare.replace(/\D/g, ""), 10) ||
+      0;
+    if (!earningsNum || earningsNum <= 0) {
+      toast.error("Vui lòng nhập doanh thu của đơn");
       return;
     }
 
     const feeNum = parseInt(platformFee.replace(/\D/g, ""), 10) || 0;
     const taxNum = parseInt(taxTncn.replace(/\D/g, ""), 10) || 0;
-    const earningsNum =
-      parseInt(driverEarnings.replace(/\D/g, ""), 10) ||
-      Math.max(0, fareNum - feeNum - taxNum);
+    const fareNum =
+      feeNum > 0
+        ? parseInt(customerFare.replace(/\D/g, ""), 10) || earningsNum + feeNum + taxNum
+        : earningsNum;
     const tipNum = parseInt(tip.replace(/\D/g, ""), 10) || 0;
     const tripsNum = parseInt(tripCount, 10) || 1;
     const distanceNum = parseFloat(distanceKm) || 0;
@@ -1220,48 +1225,25 @@ function BeeOrdersPageContent() {
                 </div>
               </div>
 
+              {/* Doanh thu & Tip: Người dùng chỉ cần nhập Doanh thu của đơn */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Cước khách (₫) *
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                    <span>Doanh thu đơn (₫) *</span>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Thực nhận về ví</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="VD: 35477"
+                    inputMode="numeric"
+                    placeholder="VD: 35000"
                     required
-                    value={customerFare}
-                    onChange={(e) => handleCustomerFareChange(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-amber-300 dark:border-amber-400/40 bg-amber-50/30 dark:bg-amber-500/5 text-xs font-mono font-bold focus:border-amber-500 focus:outline-hidden"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                    <span>Phí sàn (₫)</span>
-                    <span className="text-[10px] text-slate-400 font-normal">24.42%</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="VD: 8665"
-                    value={platformFee}
-                    onChange={(e) => handlePlatformFeeChange(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs font-mono text-rose-600 focus:border-amber-500 focus:outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                    <span>Thuế TNCN (₫)</span>
-                    <span className="text-[10px] text-slate-400 font-normal">1.5% sau sàn</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="VD: 402"
-                    value={taxTncn}
-                    onChange={(e) => handleTaxTncnChange(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs font-mono text-rose-600 focus:border-amber-500 focus:outline-hidden"
+                    value={driverEarnings}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setDriverEarnings(val);
+                      setCustomerFare(val);
+                    }}
+                    className="w-full px-3 py-2 rounded-lg border-2 border-amber-400 dark:border-amber-400/60 bg-amber-50/30 dark:bg-amber-500/10 text-sm font-mono font-black text-slate-900 dark:text-white focus:border-amber-500 focus:outline-hidden"
                   />
                 </div>
 
@@ -1271,28 +1253,70 @@ function BeeOrdersPageContent() {
                   </label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     placeholder="0"
                     value={tip}
                     onChange={(e) => setTip(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs font-mono text-amber-600 focus:border-amber-500 focus:outline-hidden"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-mono text-amber-600 focus:border-amber-500 focus:outline-hidden"
                   />
                 </div>
               </div>
 
+              {/* Tùy chọn mở rộng: Phí sàn & Thuế TNCN (chỉ hiển thị khi bấm vào) */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                  <span>Thực nhận (₫)</span>
-                  <span className="text-[10px] text-slate-400 font-normal">
-                    = Cước - Sàn - Thuế TNCN
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Tự động tính"
-                  value={driverEarnings}
-                  onChange={(e) => setDriverEarnings(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-500/5 text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 focus:border-emerald-500 focus:outline-hidden"
-                />
+                <button
+                  type="button"
+                  onClick={() => setShowDetailedFees(!showDetailedFees)}
+                  className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <span>{showDetailedFees ? "▼ Ẩn chi tiết phí & thuế" : "▶ Chi tiết cước khách, phí sàn, thuế (tùy chọn)"}</span>
+                </button>
+
+                {showDetailedFees && (
+                  <div className="mt-2 p-2.5 rounded-lg bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-0.5">
+                          Cước khách trước thuế (₫)
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="VD: 35477"
+                          value={customerFare}
+                          onChange={(e) => handleCustomerFareChange(e.target.value)}
+                          className="w-full px-2 py-1 rounded border border-slate-200 dark:border-white/10 text-xs font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-0.5">
+                          Phí sàn (24.42%)
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="VD: 8665"
+                          value={platformFee}
+                          onChange={(e) => handlePlatformFeeChange(e.target.value)}
+                          className="w-full px-2 py-1 rounded border border-slate-200 dark:border-white/10 text-xs font-mono text-rose-600"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-0.5">
+                        Thuế TNCN (1.5% sau sàn)
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="VD: 402"
+                        value={taxTncn}
+                        onChange={(e) => handleTaxTncnChange(e.target.value)}
+                        className="w-full px-2 py-1 rounded border border-slate-200 dark:border-white/10 text-xs font-mono text-rose-600"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Tải ảnh cuốc */}
