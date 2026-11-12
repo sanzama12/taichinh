@@ -68,6 +68,7 @@ import {
   BeCorporateIcon,
 } from "@/components/icons/BeeLogo";
 import { triggerRealtimeSync, EVENT_NAME } from "@/lib/realtime-sync";
+import { getTimeSession, cn } from "@/lib/utils";
 
 type AdminTab = "users" | "orders" | "incomes" | "debts" | "tickets";
 
@@ -1315,8 +1316,20 @@ function AdminUnifiedHubContent() {
 
                           {/* Thời gian & ghi chú */}
                           <td className="py-3 px-4">
-                            <div className="text-slate-600 dark:text-slate-300">
-                              {new Date(o.orderDate).toLocaleDateString("vi-VN")} {o.tripTime}
+                            <div className="text-slate-600 dark:text-slate-300 font-mono text-xs flex items-center gap-1.5 flex-wrap">
+                              <span>{new Date(o.orderDate).toLocaleDateString("vi-VN")}</span>
+                              {o.tripTime && (
+                                <span
+                                  className={cn(
+                                    "px-1.5 py-0.5 rounded text-[10px] font-bold border inline-flex items-center gap-1",
+                                    getTimeSession(o.tripTime).badgeClass
+                                  )}
+                                  title={getTimeSession(o.tripTime).label}
+                                >
+                                  <span>{getTimeSession(o.tripTime).icon}</span>
+                                  <span>{o.tripTime}</span>
+                                </span>
+                              )}
                             </div>
                             {o.note && (
                               <div className="text-[10px] text-slate-400 italic line-clamp-1 max-w-[150px]">

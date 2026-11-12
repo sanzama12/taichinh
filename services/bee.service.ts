@@ -3,7 +3,7 @@ import { BeeOrder, IBeeOrder } from "@/models/BeeOrder";
 import { Income } from "@/models/Income";
 import { BonusLog } from "@/models/BonusLog";
 import { User } from "@/models/User";
-import { Result } from "@/lib/utils";
+import { Result, normalize24hTime } from "@/lib/utils";
 import { type BeeOrderInput } from "@/lib/validators";
 import { invalidateDashboardCache } from "@/services/dashboard.service";
 
@@ -237,7 +237,7 @@ export class BeeService {
         tripCount: input.tripCount || 1,
         distanceKm: input.distanceKm || 0,
         orderDate: input.orderDate,
-        tripTime: input.tripTime || "",
+        tripTime: normalize24hTime(input.tripTime),
         imageUrl: input.imageUrl || "",
         note: input.note,
         approvalStatus,

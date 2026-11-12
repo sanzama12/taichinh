@@ -78,3 +78,141 @@ export function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
+/**
+ * Chuẩn hóa chuỗi thời gian 24h từ người dùng:
+ * - Hỗ trợ nhập trực tiếp: "19", "7", "19h", "7h", "19h30", "7h15", "19.30", "19:08", "1930"
+ * - Luôn chuyển đổi về định dạng chuẩn 24h: "HH:mm" (từ "00:00" đến "23:59")
+ * - 19h = 19:00 (Giờ tối), 7h = 07:00 (Giờ sáng)
+ * - Tuyệt đối không cần AM / PM
+ */
+export function normalize24hTime(rawInput?: string): string {
+  if (!rawInput) {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+
+  const raw = rawInput.trim().toLowerCase().replace(/\s+/g, "");
+  if (!raw) {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+
+  // 1. Dạng "19h30", "7h15", "19h", "7h"
+  const hMatch = raw.match(/^(\d{1,2})h(?:(\d{1,2}))?$/);
+  if (hMatch) {
+    let hour = parseInt(hMatch[1], 10);
+    const minute = hMatch[2] ? parseInt(hMatch[2], 10) : 0;
+    hour = Math.min(Math.max(hour, 0), 23);
+    const validMin = Math.min(Math.max(minute, 0), 59);
+    return `${String(hour).padStart(2, "0")}:${String(validMin).padStart(2, "0")}`;
+  }
+
+  // 2. Dạng "19:30", "7:08", "19.30", "7.8"
+  const colonMatch = raw.match(/^(\d{1,2})[:.](\d{1,2})$/);
+  if (colonMatch) {
+    let hour = parseInt(colonMatch[1], 10);
+    let minute = parseInt(colonMatch[2], 10);
+    hour = Math.min(Math.max(hour, 0), 23);
+    minute = Math.min(Math.max(minute, 0), 59);
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  }
+
+  // 3. Dạng chỉ toàn số: "7", "19", "708", "1930"
+  if (/^\d{1,4}$/.test(raw)) {
+    if (raw.length <= 2) {
+      let hour = parseInt(raw, 10);
+      hour = Math.min(Math.max(hour, 0), 23);
+      return `${String(hour).padStart(2, "0")}:00`;
+    }
+    if (raw.length === 3) {
+      let hour = parseInt(raw.slice(0, 1), 10);
+      let minute = parseInt(raw.slice(1), 10);
+      hour = Math.min(Math.max(hour, 0), 23);
+      minute = Math.min(Math.max(minute, 0), 59);
+      return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    }
+    if (raw.length === 4) {
+      let hour = parseInt(raw.slice(0, 2), 10);
+      let minute = parseInt(raw.slice(2), 10);
+      hour = Math.min(Math.max(hour, 0), 23);
+      minute = Math.min(Math.max(minute, 0), 59);
+      return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    }
+  }
+
+  return raw;
+}
+
+export interface TimeSessionInfo {
+  session: "morning" | "afternoon" | "evening" | "night";
+  label: string;
+  shortLabel: string;
+  icon: string;
+  badgeClass: string;
+}
+
+/**
+ * Phân loại thời điểm trong ngày theo thói quen chạy xe tại Việt Nam:
+ * - 05:00 - 11:59: ☀️ Giờ sáng
+ * - 12:00 - 17:59: 🌤️ Giờ chiều
+ * - 18:00 - 22:59: 🌙 Giờ tối (19h là Giờ tối)
+ * - 23:00 - 04:59: 🌃 Giờ khuya
+ */
+export function getTimeSession(timeStr?: string): TimeSessionInfo {
+  if (!timeStr) {
+    return {
+      session: "morning",
+      label: "Giờ sáng",
+      shortLabel: "Sáng",
+      icon: "☀️",
+      badgeClass:
+        "text-amber-700 dark:text-amber-300 bg-amber-500/10 border-amber-500/20",
+    };
+  }
+
+  const match = timeStr.match(/^(\d{1,2})/);
+  const hour = match ? parseInt(match[1], 10) : 0;
+
+  if (hour >= 5 && hour < 12) {
+    return {
+      session: "morning",
+      label: "Giờ sáng",
+      shortLabel: "Sáng",
+      icon: "☀️",
+      badgeClass:
+        "text-amber-700 dark:text-amber-300 bg-amber-500/10 border-amber-500/30",
+    };
+  }
+
+  if (hour >= 12 && hour < 18) {
+    return {
+      session: "afternoon",
+      label: "Giờ chiều",
+      shortLabel: "Chiều",
+      icon: "🌤️",
+      badgeClass:
+        "text-sky-700 dark:text-sky-300 bg-sky-500/10 border-sky-500/30",
+    };
+  }
+
+  if (hour >= 18 && hour < 23) {
+    return {
+      session: "evening",
+      label: "Giờ tối",
+      shortLabel: "Tối",
+      icon: "🌙",
+      badgeClass:
+        "text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 border-indigo-500/30",
+    };
+  }
+
+  return {
+    session: "night",
+    label: "Giờ khuya",
+    shortLabel: "Khuya",
+    icon: "🌃",
+    badgeClass:
+      "text-purple-700 dark:text-purple-300 bg-purple-500/10 border-purple-500/30",
+  };
+}
+

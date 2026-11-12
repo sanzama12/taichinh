@@ -29,7 +29,12 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { formatCurrencyVND } from "@/lib/utils";
+import {
+  formatCurrencyVND,
+  normalize24hTime,
+  getTimeSession,
+  cn,
+} from "@/lib/utils";
 import {
   getBeePageDataAction,
   createBeeOrderAction,
@@ -404,7 +409,7 @@ function BeeOrdersPageContent() {
         tripCount: tripsNum,
         distanceKm: distanceNum,
         orderDate: new Date(orderDate),
-        tripTime: tripTime || undefined,
+        tripTime: tripTime ? normalize24hTime(tripTime) : undefined,
         imageUrl: imageUrl || undefined,
         note: note.trim() || undefined,
       });
@@ -790,9 +795,21 @@ function BeeOrdersPageContent() {
                     >
                       {/* Trái: Giờ, Mã, Badge, Km */}
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-xs font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2 py-1 rounded-lg shrink-0">
-                          {order.tripTime || "--:--"}
-                        </span>
+                        {(() => {
+                          const session = getTimeSession(order.tripTime);
+                          return (
+                            <span
+                              className={cn(
+                                "text-xs font-mono font-bold px-2 py-1 rounded-lg shrink-0 border inline-flex items-center gap-1",
+                                session.badgeClass
+                              )}
+                              title={`${order.tripTime || "--:--"} (${session.label})`}
+                            >
+                              <span>{session.icon}</span>
+                              <span>{order.tripTime || "--:--"}</span>
+                            </span>
+                          );
+                        })()}
 
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -894,10 +911,26 @@ function BeeOrdersPageContent() {
                 {displayOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02]">
                     <td className="py-2.5 px-3 font-mono">
-                      <span className="font-bold">{order.tripTime || "--:--"}</span>
-                      <span className="text-slate-400 text-[10px] ml-1">
-                        {new Date(order.orderDate).toLocaleDateString("vi-VN")}
-                      </span>
+                      {(() => {
+                        const session = getTimeSession(order.tripTime);
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={cn(
+                                "text-[11px] font-bold px-1.5 py-0.5 rounded border inline-flex items-center gap-1 shrink-0",
+                                session.badgeClass
+                              )}
+                              title={session.label}
+                            >
+                              <span>{session.icon}</span>
+                              <span>{order.tripTime || "--:--"}</span>
+                            </span>
+                            <span className="text-slate-400 text-[10px]">
+                              {new Date(order.orderDate).toLocaleDateString("vi-VN")}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-white">
                       {order.orderCode}
@@ -969,7 +1002,11 @@ function BeeOrdersPageContent() {
           <div className="relative max-w-xl w-full bg-white dark:bg-[#0c121e] rounded-2xl overflow-hidden border border-slate-200 dark:border-white/20 shadow-2xl space-y-3">
             <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-white/10">
               <div className="font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
-                Cuốc {lightboxData.orderCode} • {lightboxData.tripTime || ""} {lightboxData.orderDate}
+                Cuốc {lightboxData.orderCode} •{" "}
+                {lightboxData.tripTime
+                  ? `${getTimeSession(lightboxData.tripTime).icon} ${lightboxData.tripTime} (${getTimeSession(lightboxData.tripTime).label}) • `
+                  : ""}
+                {lightboxData.orderDate}
               </div>
               <button
                 onClick={() => setLightboxData(null)}
@@ -1060,15 +1097,31 @@ function BeeOrdersPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Giờ chạy *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Giờ chạy (24h) *
+                    </label>
+                    {tripTime && (
+                      <span
+                        className={cn(
+                          "text-[10px] font-semibold px-1 py-0.2 rounded border inline-flex items-center gap-0.5",
+                          getTimeSession(tripTime).badgeClass
+                        )}
+                        title={getTimeSession(tripTime).label}
+                      >
+                        <span>{getTimeSession(tripTime).icon}</span>
+                        <span>{getTimeSession(tripTime).shortLabel}</span>
+                      </span>
+                    )}
+                  </div>
                   <input
-                    type="time"
+                    type="text"
                     required
+                    placeholder="19:00 hoặc 7h"
                     value={tripTime}
                     onChange={(e) => setTripTime(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-amber-300 dark:border-amber-400/40 bg-amber-50/20 dark:bg-amber-500/5 text-xs font-mono font-bold focus:border-amber-500 focus:outline-hidden"
+                    onBlur={() => setTripTime(normalize24hTime(tripTime))}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-amber-300 dark:border-amber-400/40 bg-amber-50/20 dark:bg-amber-500/5 text-xs font-mono font-bold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-hidden"
                   />
                 </div>
 
@@ -1083,6 +1136,68 @@ function BeeOrdersPageContent() {
                     onChange={(e) => setOrderDate(e.target.value)}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs font-mono focus:border-amber-500 focus:outline-hidden"
                   />
+                </div>
+              </div>
+
+              {/* Chọn nhanh khung giờ 24h: 19h = Giờ tối, 7h = Giờ sáng, không dùng AM/PM */}
+              <div className="flex items-center justify-between gap-1 text-[11px] bg-slate-50 dark:bg-white/[0.03] px-2.5 py-1.5 rounded-lg border border-slate-200/60 dark:border-white/5">
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-amber-500" />
+                  <span>Chọn 24h:</span>
+                </span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setTripTime("07:00")}
+                    className={cn(
+                      "px-2 py-0.5 rounded text-[10px] font-semibold border transition-all active:scale-95 cursor-pointer",
+                      tripTime === "07:00"
+                        ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                        : "bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/20"
+                    )}
+                    title="07:00 - Giờ sáng"
+                  >
+                    ☀️ 7h Sáng
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTripTime("12:00")}
+                    className={cn(
+                      "px-2 py-0.5 rounded text-[10px] font-semibold border transition-all active:scale-95 cursor-pointer",
+                      tripTime === "12:00"
+                        ? "bg-sky-500 text-white border-sky-600 shadow-xs"
+                        : "bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/20"
+                    )}
+                    title="12:00 - Giờ trưa"
+                  >
+                    🌤️ 12h Trưa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTripTime("19:00")}
+                    className={cn(
+                      "px-2 py-0.5 rounded text-[10px] font-semibold border transition-all active:scale-95 cursor-pointer",
+                      tripTime === "19:00"
+                        ? "bg-indigo-600 text-white border-indigo-700 shadow-xs"
+                        : "bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-500/20"
+                    )}
+                    title="19:00 - Giờ tối"
+                  >
+                    🌙 19h Tối
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      setTripTime(
+                        `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+                      );
+                    }}
+                    className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+                    title="Lấy giờ hiện tại"
+                  >
+                    ⚡ Bây giờ
+                  </button>
                 </div>
               </div>
 
