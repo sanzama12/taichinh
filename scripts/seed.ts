@@ -29,7 +29,7 @@ async function runSeed() {
   } else {
     console.log(`Kết nối cơ sở dữ liệu MongoDB: ${MONGODB_URI}`);
     await mongoose.connect(MONGODB_URI, { family: 4 });
-    console.log("✓ Kết nối MongoDB Atlas thành công!");
+    console.log("✓ Kết nối MongoDB Server cục bộ thành công!");
   }
 
   const today = new Date();

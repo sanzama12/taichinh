@@ -20,9 +20,10 @@ if (!global.mongooseCache) {
 }
 
 /**
- * Kết nối Cơ Sở Dữ Liệu:
- * - Hỗ trợ chế độ JSON Database Cục Bộ siêu tốc (Zero External Dependencies) khi test
- * - Hỗ trợ kết nối MongoDB Atlas Connection Pool khi triển khai Production
+ * Kết nối Cơ Sở Dữ Liệu MongoDB Cục Bộ:
+ * - Lưu trữ WiredTiger trực tiếp trên đĩa (data/mongodb-data)
+ * - Cổng kết nối chuẩn: mongodb://127.0.0.1:27017/quanlytaichinh
+ * - Hỗ trợ chế độ JSON DB fallback siêu tốc khi cần
  */
 export async function connectDB(): Promise<typeof mongoose> {
   // Nếu đang ở chế độ JSON Database
@@ -41,7 +42,7 @@ export async function connectDB(): Promise<typeof mongoose> {
       maxPoolSize: 25,
       minPoolSize: 5,
       socketTimeoutMS: 20000,
-      serverSelectionTimeoutMS: 4000,
+      serverSelectionTimeoutMS: 5000,
       family: 4,
     };
 
@@ -50,26 +51,9 @@ export async function connectDB(): Promise<typeof mongoose> {
       .then((mongooseInstance) => {
         return mongooseInstance;
       })
-      .catch(async (err) => {
-        // Tự động dự phòng kết nối Local MongoDB nếu Atlas chưa whitelist IP khi chạy dev
-        if (process.env.NODE_ENV !== "production" && MONGODB_URI.includes("mongodb+srv")) {
-          console.warn("⚠️ [DB] MongoDB Atlas chưa được Whitelist IP hoặc đang bảo trì. Tự động chuyển hướng sang MongoDB Local...");
-          try {
-            const localOpts: mongoose.ConnectOptions = {
-              bufferCommands: false,
-              serverSelectionTimeoutMS: 2000,
-              family: 4,
-            };
-            const localInstance = await mongoose.connect("mongodb://127.0.0.1:27017/quanlytaichinh", localOpts);
-            console.log("✅ [DB] Đã kích hoạt kết nối MongoDB Local (port 27017) dự phòng thành công!");
-            return localInstance;
-          } catch (localErr) {
-            console.error("❌ Kết nối MongoDB Local cũng thất bại:", localErr);
-          }
-        }
-
+      .catch((err) => {
         cached.promise = null;
-        console.error("❌ Lỗi kết nối MongoDB:", err);
+        console.error("❌ Lỗi kết nối MongoDB Cục Bộ (port 27017):", err);
         throw err;
       });
   }

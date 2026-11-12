@@ -193,7 +193,7 @@ export function CartoonFeatureGrid({
             <span>DANH MỤC NGHIỆP VỤ & CHỈ HUY TÀI CHÍNH</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Hệ sinh thái 8 chức năng cốt lõi đồng bộ trực tiếp với MongoDB Atlas
+            Hệ sinh thái 8 chức năng cốt lõi đồng bộ trực tiếp với MongoDB Server
           </p>
         </div>
         <span className="hidden sm:inline-flex text-[11px] font-mono font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10">

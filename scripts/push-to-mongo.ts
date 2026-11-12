@@ -43,24 +43,24 @@ async function pushToMongo() {
   // Khởi tạo 2 vai trò chuẩn: Admin và User
   const accounts = [
     {
-      key: "PROMAX-CORP-9999",
+      key: "0335384174",
       name: "Quản Trị Viên (Admin)",
       role: "admin",
       email: "admin@promax.vn",
       age: 32,
       avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
       address: "Hà Nội, Việt Nam",
-      phone: "0988889999",
+      phone: "0335384174",
     },
     {
-      key: "PROMAX-USER-8888",
+      key: "0901234567",
       name: "Người Dùng (User ProMax)",
       role: "user",
       email: "user@promax.vn",
       age: 26,
       avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
       address: "TP. Hồ Chí Minh, Việt Nam",
-      phone: "0912345678",
+      phone: "0901234567",
     },
   ];
 
