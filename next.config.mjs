@@ -1,11 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   experimental: {
     serverComponentsExternalPackages: ["mongoose"],
-    webpackBuildWorker: true,
-    memoryBasedWorkersCount: true,
+    optimizePackageImports: [
+      "lucide-react",
+      "date-fns",
+      "recharts",
+      "framer-motion",
+    ],
   },
+  swcMinify: true,
+  poweredByHeader: false,
 };
 
 export default nextConfig;
