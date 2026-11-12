@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Default: Giao diện Sáng (Clean Light Studio - Tinh tế, sắc nét, siêu dễ nhìn) */
+  :root {
+    --background: 210 40% 98%;     /* #f8fafc - Slate 50 */
+    --foreground: 222 47% 11%;     /* #0f172a - Slate 900 */
+
+    --card: 0 0% 100%;             /* #ffffff - Pure White */
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 217 91% 60%;        /* #2563eb - Royal Corporate Blue */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;    /* #f1f5f9 - Slate 100 */
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%; /* #64748b - Slate 500 */
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84.2% 60.2%;  /* #ef4444 */
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;   /* #e2e8f0 - Slate 200 */
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.75rem;
+  }
+
+  /* Chế độ Tối (Dark Luxury Theme khi người dùng bật) */
+  .dark {
+    --background: 224 71% 4%;     /* #030712 - Midnight Onyx */
+    --foreground: 210 40% 98%;     /* #f8fafc */
+
+    --card: 222 47% 7%;            /* #080e1a */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 7%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217 33% 12%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 12%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 16%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 350 89% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 14%;
+    --input: 217 33% 14%;
+    --ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-blue-500/20 selection:text-blue-700 min-h-screen flex flex-col font-sans;
+  }
+}
+
+/* Scrollbar tinh chỉnh sạch sẽ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
+}
