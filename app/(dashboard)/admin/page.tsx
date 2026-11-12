@@ -1295,6 +1295,9 @@ function AdminUnifiedHubContent() {
                             </div>
                             <div className="text-[10px] text-slate-400 font-mono">
                               Phí sàn: -{o.platformFee.toLocaleString("vi-VN")} ₫
+                              {o.taxTncn > 0 && (
+                                <span className="ml-1 text-rose-500">• Thuế: -{o.taxTncn.toLocaleString("vi-VN")} ₫</span>
+                              )}
                             </div>
                           </td>
 

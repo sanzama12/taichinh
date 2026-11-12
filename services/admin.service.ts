@@ -45,6 +45,7 @@ export interface PendingBeeOrderItemDto {
   serviceType: string;
   customerFare: number;
   platformFee: number;
+  taxTncn: number;
   driverEarnings: number;
   tip: number;
   orderDate: string;
@@ -227,6 +228,7 @@ export class AdminService {
           serviceType: o.serviceType || "beBike",
           customerFare: Number(o.customerFare) || 0,
           platformFee: Number(o.platformFee) || 0,
+          taxTncn: Number(o.taxTncn) || 0,
           driverEarnings: Number(o.driverEarnings) || 0,
           tip: Number(o.tip) || 0,
           orderDate: o.orderDate ? new Date(o.orderDate).toISOString() : new Date().toISOString(),

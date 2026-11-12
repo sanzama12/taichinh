@@ -82,6 +82,7 @@ interface DayGroup {
   totalEarnings: number;
   totalCustomerFare: number;
   totalPlatformFee: number;
+  totalTaxTncn: number;
   totalTip: number;
   tripCount: number;
 }
@@ -100,6 +101,7 @@ function BeeOrdersPageContent() {
     totalEarnings: 0,
     totalCustomerFare: 0,
     totalPlatformFee: 0,
+    totalTaxTncn: 0,
     totalTip: 0,
     totalTrips: 0,
     avgFeePercent: 0,
@@ -121,6 +123,7 @@ function BeeOrdersPageContent() {
   const [serviceType, setServiceType] = React.useState<BeeServiceType>("beBike");
   const [customerFare, setCustomerFare] = React.useState<string>("");
   const [platformFee, setPlatformFee] = React.useState<string>("");
+  const [taxTncn, setTaxTncn] = React.useState<string>("");
   const [driverEarnings, setDriverEarnings] = React.useState<string>("");
   const [tip, setTip] = React.useState<string>("0");
   const [tripCount, setTripCount] = React.useState<string>("1");
@@ -220,6 +223,7 @@ function BeeOrdersPageContent() {
       const totalEarnings = dayOrders.reduce((s, o) => s + o.driverEarnings, 0);
       const totalCustomerFare = dayOrders.reduce((s, o) => s + o.customerFare, 0);
       const totalPlatformFee = dayOrders.reduce((s, o) => s + o.platformFee, 0);
+      const totalTaxTncn = dayOrders.reduce((s, o) => s + (o.taxTncn || 0), 0);
       const totalTip = dayOrders.reduce((s, o) => s + o.tip, 0);
       const tripCount = dayOrders.reduce((s, o) => s + o.tripCount, 0);
 
@@ -237,6 +241,7 @@ function BeeOrdersPageContent() {
         totalEarnings,
         totalCustomerFare,
         totalPlatformFee,
+        totalTaxTncn,
         totalTip,
         tripCount,
       });
@@ -252,6 +257,7 @@ function BeeOrdersPageContent() {
     const totalEarnings = filtered.reduce((s, o) => s + o.driverEarnings, 0);
     const totalCustomerFare = filtered.reduce((s, o) => s + o.customerFare, 0);
     const totalPlatformFee = filtered.reduce((s, o) => s + o.platformFee, 0);
+    const totalTaxTncn = filtered.reduce((s, o) => s + (o.taxTncn || 0), 0);
     const totalTip = filtered.reduce((s, o) => s + o.tip, 0);
     const totalTrips = filtered.reduce((s, o) => s + o.tripCount, 0);
     const avgFeePercent =
@@ -265,6 +271,7 @@ function BeeOrdersPageContent() {
       totalEarnings,
       totalCustomerFare,
       totalPlatformFee,
+      totalTaxTncn,
       totalTip,
       totalTrips,
       avgFeePercent,
@@ -289,20 +296,34 @@ function BeeOrdersPageContent() {
     }
   };
 
+  const recalculateEarnings = (fareStr: string, feeStr: string, taxStr: string) => {
+    const fareNum = parseInt(fareStr.replace(/\D/g, ""), 10) || 0;
+    const feeNum = parseInt(feeStr.replace(/\D/g, ""), 10) || 0;
+    const taxNum = parseInt(taxStr.replace(/\D/g, ""), 10) || 0;
+    const net = Math.max(0, fareNum - feeNum - taxNum);
+    setDriverEarnings(net > 0 ? String(net) : "");
+  };
+
   const handleCustomerFareChange = (val: string) => {
     setCustomerFare(val);
     const fareNum = parseInt(val.replace(/\D/g, ""), 10) || 0;
     const estimatedFee = Math.round(fareNum * 0.262);
     setPlatformFee(estimatedFee > 0 ? String(estimatedFee) : "");
-    const estimatedNet = Math.max(0, fareNum - estimatedFee);
+    // Thuế TNCN Be: 1.5% doanh thu
+    const estimatedTax = Math.round(fareNum * 0.015);
+    setTaxTncn(estimatedTax > 0 ? String(estimatedTax) : "");
+    const estimatedNet = Math.max(0, fareNum - estimatedFee - estimatedTax);
     setDriverEarnings(estimatedNet > 0 ? String(estimatedNet) : "");
   };
 
   const handlePlatformFeeChange = (val: string) => {
     setPlatformFee(val);
-    const fareNum = parseInt(customerFare.replace(/\D/g, ""), 10) || 0;
-    const feeNum = parseInt(val.replace(/\D/g, ""), 10) || 0;
-    setDriverEarnings(String(Math.max(0, fareNum - feeNum)));
+    recalculateEarnings(customerFare, val, taxTncn);
+  };
+
+  const handleTaxTncnChange = (val: string) => {
+    setTaxTncn(val);
+    recalculateEarnings(customerFare, platformFee, val);
   };
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -359,9 +380,10 @@ function BeeOrdersPageContent() {
     }
 
     const feeNum = parseInt(platformFee.replace(/\D/g, ""), 10) || 0;
+    const taxNum = parseInt(taxTncn.replace(/\D/g, ""), 10) || 0;
     const earningsNum =
       parseInt(driverEarnings.replace(/\D/g, ""), 10) ||
-      Math.max(0, fareNum - feeNum);
+      Math.max(0, fareNum - feeNum - taxNum);
     const tipNum = parseInt(tip.replace(/\D/g, ""), 10) || 0;
     const tripsNum = parseInt(tripCount, 10) || 1;
     const distanceNum = parseFloat(distanceKm) || 0;
@@ -376,6 +398,7 @@ function BeeOrdersPageContent() {
         serviceType,
         customerFare: fareNum,
         platformFee: feeNum,
+        taxTncn: taxNum,
         driverEarnings: earningsNum,
         tip: tipNum,
         tripCount: tripsNum,
@@ -392,6 +415,7 @@ function BeeOrdersPageContent() {
         setOrderCode("");
         setCustomerFare("");
         setPlatformFee("");
+        setTaxTncn("");
         setDriverEarnings("");
         setTip("0");
         setDistanceKm("");
@@ -675,8 +699,11 @@ function BeeOrdersPageContent() {
           <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
             {formatCurrencyVND(displaySummary.totalCustomerFare)}
           </div>
-          <div className="text-[11px] text-rose-500 font-mono">
-            Phí sàn: -{formatCurrencyVND(displaySummary.totalPlatformFee)}
+          <div className="text-[11px] font-mono space-y-0.5">
+            <div className="text-rose-500">Phí sàn: -{formatCurrencyVND(displaySummary.totalPlatformFee)}</div>
+            {displaySummary.totalTaxTncn > 0 && (
+              <div className="text-amber-600 dark:text-amber-400">Thuế TNCN: -{formatCurrencyVND(displaySummary.totalTaxTncn)}</div>
+            )}
           </div>
         </div>
 
@@ -795,6 +822,9 @@ function BeeOrdersPageContent() {
                           </div>
                           <div className="text-[10px] font-mono text-slate-400">
                             {formatCurrencyVND(order.customerFare)}
+                            {order.taxTncn > 0 && (
+                              <span className="text-rose-500 ml-1">Thuế: -{formatCurrencyVND(order.taxTncn)}</span>
+                            )}
                             {order.tip > 0 && (
                               <span className="text-amber-600 ml-1">+{formatCurrencyVND(order.tip)}</span>
                             )}
@@ -854,6 +884,7 @@ function BeeOrdersPageContent() {
                   <th className="py-2.5 px-3 text-center">Ảnh</th>
                   <th className="py-2.5 px-3 text-right">Cước Khách</th>
                   <th className="py-2.5 px-3 text-right">Phí Sàn</th>
+                  <th className="py-2.5 px-3 text-right">Thuế TNCN</th>
                   <th className="py-2.5 px-3 text-right">Thực Nhận</th>
                   <th className="py-2.5 px-3 text-right">Tip</th>
                   <th className="py-2.5 px-3 text-center">Xóa</th>
@@ -906,6 +937,9 @@ function BeeOrdersPageContent() {
                     </td>
                     <td className="py-2.5 px-3 text-right font-mono tabular-nums text-rose-500">
                       -{formatCurrencyVND(order.platformFee)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono tabular-nums text-rose-500">
+                      {order.taxTncn ? `-${formatCurrencyVND(order.taxTncn)}` : "-"}
                     </td>
                     <td className="py-2.5 px-3 text-right font-mono font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                       +{formatCurrencyVND(order.driverEarnings)}
@@ -1084,14 +1118,14 @@ function BeeOrdersPageContent() {
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Thực nhận (₫)
+                    Thuế TNCN (₫)
                   </label>
                   <input
                     type="text"
-                    placeholder="Tự động tính"
-                    value={driverEarnings}
-                    onChange={(e) => setDriverEarnings(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-500/5 text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 focus:border-emerald-500 focus:outline-hidden"
+                    placeholder="1.5% cước"
+                    value={taxTncn}
+                    onChange={(e) => handleTaxTncnChange(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs font-mono text-rose-600 focus:border-amber-500 focus:outline-hidden"
                   />
                 </div>
 
@@ -1107,6 +1141,22 @@ function BeeOrdersPageContent() {
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs font-mono text-amber-600 focus:border-amber-500 focus:outline-hidden"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Thực nhận (₫)</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    = Cước - Sàn - Thuế TNCN
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Tự động tính"
+                  value={driverEarnings}
+                  onChange={(e) => setDriverEarnings(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-500/5 text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 focus:border-emerald-500 focus:outline-hidden"
+                />
               </div>
 
               {/* Tải ảnh cuốc */}

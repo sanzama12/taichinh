@@ -36,6 +36,7 @@ export interface BeeOrderDto {
     | "beFood";
   customerFare: number;
   platformFee: number;
+  taxTncn: number;
   driverEarnings: number;
   tip: number;
   tripCount: number;
@@ -52,6 +53,7 @@ export interface BeeSummaryDto {
   totalEarnings: number;
   totalCustomerFare: number;
   totalPlatformFee: number;
+  totalTaxTncn: number;
   totalTip: number;
   totalTrips: number;
   avgFeePercent: number;
@@ -91,12 +93,14 @@ export class BeeService {
       let totalEarnings = 0;
       let totalCustomerFare = 0;
       let totalPlatformFee = 0;
+      let totalTaxTncn = 0;
       let totalTip = 0;
       let totalTrips = 0;
 
       const orders: BeeOrderDto[] = (rawOrders as any[]).map((o) => {
         const fare = Number(o.customerFare) || 0;
         const fee = Number(o.platformFee) || 0;
+        const tax = Number(o.taxTncn) || 0;
         const earnings = Number(o.driverEarnings) || 0;
         const tip = Number(o.tip) || 0;
         const trips = Number(o.tripCount) || 1;
@@ -104,6 +108,7 @@ export class BeeService {
         totalEarnings += earnings;
         totalCustomerFare += fare;
         totalPlatformFee += fee;
+        totalTaxTncn += tax;
         totalTip += tip;
         totalTrips += trips;
 
@@ -113,6 +118,7 @@ export class BeeService {
           serviceType: o.serviceType || "beBike",
           customerFare: fare,
           platformFee: fee,
+          taxTncn: tax,
           driverEarnings: earnings,
           tip,
           tripCount: trips,
@@ -135,6 +141,7 @@ export class BeeService {
         totalEarnings,
         totalCustomerFare,
         totalPlatformFee,
+        totalTaxTncn,
         totalTip,
         totalTrips,
         avgFeePercent,
@@ -207,10 +214,11 @@ export class BeeService {
 
       const customerFare = Math.round(input.customerFare);
       const platformFee = Math.round(input.platformFee || 0);
+      const taxTncn = Math.round(input.taxTncn || 0);
       const driverEarnings =
         input.driverEarnings !== undefined && input.driverEarnings > 0
           ? Math.round(input.driverEarnings)
-          : Math.max(0, customerFare - platformFee);
+          : Math.max(0, customerFare - platformFee - taxTncn);
 
       // Lấy vai trò user: nếu Admin thêm thì duyệt ngay, User gửi lên thì chờ Admin xét duyệt
       const userDoc = await User.findById(userId).select("role").lean();
@@ -223,6 +231,7 @@ export class BeeService {
         serviceType: input.serviceType,
         customerFare,
         platformFee,
+        taxTncn,
         driverEarnings,
         tip: Math.round(input.tip || 0),
         tripCount: input.tripCount || 1,
@@ -261,6 +270,7 @@ export class BeeService {
         serviceType: newOrder.serviceType,
         customerFare: newOrder.customerFare,
         platformFee: newOrder.platformFee,
+        taxTncn: Number((newOrder as any).taxTncn) || taxTncn,
         driverEarnings: newOrder.driverEarnings,
         tip: newOrder.tip,
         tripCount: newOrder.tripCount,

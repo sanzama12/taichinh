@@ -137,6 +137,7 @@ export const BeeOrderSchema = z.object({
     .default("beBike"),
   customerFare: z.coerce.number().int().min(0, "Cước khách trả không được âm"),
   platformFee: z.coerce.number().int().min(0, "Phí sàn không được âm").default(0),
+  taxTncn: z.coerce.number().int().min(0, "Thuế TNCN không được âm").default(0),
   driverEarnings: z.coerce.number().int().min(0, "Thu nhập tài xế không được âm"),
   tip: z.coerce.number().int().min(0, "Tiền boa không được âm").default(0),
   tripCount: z.coerce.number().int().min(1, "Số cuốc tối thiểu là 1").default(1),

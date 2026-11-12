@@ -18,6 +18,7 @@ export interface IBeeOrder {
   serviceType: BeeServiceType;
   customerFare: number;
   platformFee: number;
+  taxTncn?: number;
   driverEarnings: number;
   tip: number;
   tripCount: number;
@@ -68,6 +69,11 @@ const BeeOrderSchema = new Schema<IBeeOrder>(
       type: Number,
       default: 0,
       min: [0, "Phí sàn không được âm"],
+    },
+    taxTncn: {
+      type: Number,
+      default: 0,
+      min: [0, "Thuế TNCN không được âm"],
     },
     driverEarnings: {
       type: Number,
