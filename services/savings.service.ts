@@ -12,6 +12,7 @@ export interface SavingsGoalItemDto {
   id: string;
   name: string;
   targetAmount: number;
+  dailyTarget: number;
   currentAmount: number;
   remainingAmount: number;
   progressPercent: number;
@@ -19,6 +20,11 @@ export interface SavingsGoalItemDto {
   daysRemaining: number;
   monthsRemaining: number;
   requiredMonthlySavings: number;
+  todayDepositedAmount: number;
+  isCompletedToday: boolean;
+  monthDepositedDays: number;
+  totalDaysInMonth: number;
+  currentDayOfMonth: number;
   isCompleted: boolean;
   isOverdue: boolean;
   createdAt: string;
@@ -38,6 +44,9 @@ export interface SavingsSummaryDto {
   totalCurrentSavings: number;
   totalTargetSavings: number;
   overallProgressPercent: number;
+  totalDailyTarget: number;
+  todayTotalDeposited: number;
+  isTodayTargetMet: boolean;
   totalMonthlyRequired: number;
   recommendedEmergencyFund: number;
   averageMonthlyExpense: number;
@@ -62,8 +71,13 @@ export class SavingsService {
       const userObjId = new mongoose.Types.ObjectId(userId);
       const today = new Date();
 
-      // Truy vấn song song: (1) Goals, (2) Transactions, (3) Expenses để tính Quỹ Khẩn Cấp 6 tháng
-      const [rawGoals, rawTransactions, recentExpenses, activeBills] = await Promise.all([
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const daysInCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      const currentDay = today.getDate();
+
+      // Truy vấn song song: (1) Goals, (2) Transactions, (3) Expenses để tính Quỹ Khẩn Cấp 6 tháng, (4) Deposits tháng này
+      const [rawGoals, rawTransactions, recentExpenses, activeBills, currentMonthDeposits] = await Promise.all([
         SavingsGoal.find({ userId: userObjId }).sort({ deadline: 1 }).lean().exec(),
         SavingsTransaction.find({ userId: userObjId })
           .sort({ date: -1, createdAt: -1 })
@@ -72,6 +86,11 @@ export class SavingsService {
           .exec(),
         Expense.find({ userId: userObjId }).select("amount").lean().exec(),
         Bill.find({ userId: userObjId, isActive: true }).select("amount").lean().exec(),
+        SavingsTransaction.find({
+          userId: userObjId,
+          type: "deposit",
+          date: { $gte: monthStart },
+        }).lean().exec(),
       ]);
 
       // Tính chi phí trung bình hàng tháng ước tính (Bill cố định + Chi tiêu hàng ngày)
@@ -90,6 +109,8 @@ export class SavingsService {
       let totalCurrent = 0;
       let totalTarget = 0;
       let totalMonthlyReq = 0;
+      let totalDailyTarget = 0;
+      let todayTotalDeposited = 0;
       let completedCount = 0;
       let activeCount = 0;
 
@@ -114,13 +135,36 @@ export class SavingsService {
         const monthsRem = Math.max(differenceInMonths(deadlineDate, today), 0);
         const isOverdue = daysRem < 0 && !isCompleted;
 
+        // Cơ chế nạp mỗi ngày để tổng 1 tháng:
+        const dailyTarget =
+          (g as any).dailyTarget && (g as any).dailyTarget > 0
+            ? (g as any).dailyTarget
+            : Math.round(target / daysInCurrentMonth);
+
+        // Các giao dịch nạp vào sổ này trong tháng
+        const goalMonthTxs = currentMonthDeposits.filter(
+          (tx) => tx.goalId.toString() === g._id.toString()
+        );
+        const todayTxs = goalMonthTxs.filter((tx) => new Date(tx.date) >= todayStart);
+        const todayDepositedAmount = todayTxs.reduce((sum, tx) => sum + tx.amount, 0);
+        const isCompletedToday = dailyTarget > 0 && todayDepositedAmount >= dailyTarget;
+
+        const depositedDaysSet = new Set(
+          goalMonthTxs.map((tx) => new Date(tx.date).getDate())
+        );
+        const monthDepositedDays = depositedDaysSet.size;
+
+        if (!isCompleted) {
+          totalDailyTarget += dailyTarget;
+          todayTotalDeposited += todayDepositedAmount;
+        }
+
         // Tính số tiền cần tiết kiệm mỗi tháng để đạt đúng hạn
         let reqMonthly = 0;
         if (!isCompleted) {
           if (monthsRem > 0) {
             reqMonthly = Math.ceil(remaining / monthsRem);
           } else {
-            // Còn dưới 1 tháng: cần tiết kiệm toàn bộ số tiền còn lại
             reqMonthly = remaining;
           }
           totalMonthlyReq += reqMonthly;
@@ -130,6 +174,7 @@ export class SavingsService {
           id: g._id.toString(),
           name: g.name,
           targetAmount: target,
+          dailyTarget,
           currentAmount: current,
           remainingAmount: remaining,
           progressPercent: progress,
@@ -137,6 +182,11 @@ export class SavingsService {
           daysRemaining: daysRem,
           monthsRemaining: monthsRem,
           requiredMonthlySavings: reqMonthly,
+          todayDepositedAmount,
+          isCompletedToday,
+          monthDepositedDays,
+          totalDaysInMonth: daysInCurrentMonth,
+          currentDayOfMonth: currentDay,
           isCompleted,
           isOverdue,
           createdAt: g.createdAt.toISOString(),
@@ -163,6 +213,9 @@ export class SavingsService {
           totalCurrentSavings: totalCurrent,
           totalTargetSavings: totalTarget,
           overallProgressPercent: overallProgress,
+          totalDailyTarget,
+          todayTotalDeposited,
+          isTodayTargetMet: totalDailyTarget > 0 && todayTotalDeposited >= totalDailyTarget,
           totalMonthlyRequired: totalMonthlyReq,
           recommendedEmergencyFund,
           averageMonthlyExpense: estimatedMonthlyExpense,
@@ -185,10 +238,16 @@ export class SavingsService {
   ): Promise<Result<SavingsGoalItemDto>> {
     try {
       await connectDB();
+      const dailyTarget =
+        input.dailyTarget && input.dailyTarget > 0
+          ? Math.round(input.dailyTarget)
+          : Math.round(input.targetAmount / 30);
+
       const goal = await SavingsGoal.create({
         userId: new mongoose.Types.ObjectId(userId),
         name: input.name.trim(),
         targetAmount: Math.round(input.targetAmount),
+        dailyTarget,
         currentAmount: Math.round(input.currentAmount || 0),
         deadline: input.deadline,
       });
@@ -204,6 +263,7 @@ export class SavingsService {
         id: goal._id.toString(),
         name: goal.name,
         targetAmount: target,
+        dailyTarget,
         currentAmount: current,
         remainingAmount: remaining,
         progressPercent: progress,
@@ -211,6 +271,11 @@ export class SavingsService {
         daysRemaining: differenceInDays(new Date(goal.deadline), new Date()),
         monthsRemaining: monthsRem,
         requiredMonthlySavings: reqMonthly,
+        todayDepositedAmount: 0,
+        isCompletedToday: false,
+        monthDepositedDays: 0,
+        totalDaysInMonth: 30,
+        currentDayOfMonth: new Date().getDate(),
         isCompleted: current >= target,
         isOverdue: false,
         createdAt: goal.createdAt.toISOString(),
@@ -231,11 +296,17 @@ export class SavingsService {
   ): Promise<Result<boolean>> {
     try {
       await connectDB();
+      const dailyTarget =
+        input.dailyTarget && input.dailyTarget > 0
+          ? Math.round(input.dailyTarget)
+          : Math.round(input.targetAmount / 30);
+
       const updated = await SavingsGoal.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(goalId), userId: new mongoose.Types.ObjectId(userId) },
         {
           name: input.name.trim(),
           targetAmount: Math.round(input.targetAmount),
+          dailyTarget,
           currentAmount: Math.round(input.currentAmount || 0),
           deadline: input.deadline,
         }

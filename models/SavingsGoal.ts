@@ -7,6 +7,7 @@ export interface ISavingsGoal {
   userId: mongoose.Types.ObjectId;
   name: string;
   targetAmount: number;
+  dailyTarget?: number;
   currentAmount: number;
   deadline: Date;
   createdAt: Date;
@@ -30,6 +31,11 @@ const SavingsGoalSchema = new Schema<ISavingsGoal>(
       type: Number,
       required: [true, "Số tiền mục tiêu không được để trống"],
       min: [0, "Số tiền không được âm"],
+    },
+    dailyTarget: {
+      type: Number,
+      default: 0,
+      min: [0, "Mục tiêu ngày không được âm"],
     },
     currentAmount: {
       type: Number,

@@ -65,11 +65,11 @@ export function SavingsSummaryCards({
         </div>
       </div>
 
-      {/* 3. Tiền Cần Để Dành Mỗi Tháng */}
+      {/* 3. Chỉ Tiêu Nạp Mỗi Ngày */}
       <div className="p-5 rounded-2xl bg-white dark:bg-[#090e17] border border-slate-200 dark:border-white/[0.08] shadow-sm relative overflow-hidden group">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 uppercase tracking-wider font-bold">
-            CẦN TÍCH LŨY / THÁNG
+            CHỈ TIÊU NẠP MỖI NGÀY
           </span>
           <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 text-amber-600 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400 flex items-center justify-center">
             <Calendar className="w-4 h-4" />
@@ -77,10 +77,22 @@ export function SavingsSummaryCards({
         </div>
         <div className="mt-3">
           <p className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 tabular-nums">
-            {formatCurrencyVND(summary.totalMonthlyRequired)}
+            {formatCurrencyVND(summary.totalDailyTarget || 0)}
+            <span className="text-xs font-normal text-slate-400 ml-1">/ ngày</span>
           </p>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-mono">
-            <span>Để đạt 100% mục tiêu đúng hạn</span>
+            {summary.isTodayTargetMet ? (
+              <span className="text-emerald-500 font-bold">
+                ☀️ Đã nạp đủ hôm nay: {formatCurrencyVND(summary.todayTotalDeposited)}
+              </span>
+            ) : (
+              <span>
+                Hôm nay đã nạp:{" "}
+                <span className="font-bold text-amber-500 tabular-nums">
+                  {formatCurrencyVND(summary.todayTotalDeposited)}
+                </span>
+              </span>
+            )}
           </div>
         </div>
       </div>

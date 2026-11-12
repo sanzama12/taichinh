@@ -41,6 +41,9 @@ export default function SavingsPage() {
     averageMonthlyExpense: 0,
     activeGoalsCount: 0,
     completedGoalsCount: 0,
+    totalDailyTarget: 0,
+    todayTotalDeposited: 0,
+    isTodayTargetMet: false,
   });
   const [isLoading, setIsLoading] = React.useState(true);
 
@@ -126,6 +129,26 @@ export default function SavingsPage() {
     setIsTxModalOpen(true);
   };
 
+  // 1-Click nạp nhanh chỉ tiêu hôm nay
+  const handleQuickDepositToday = async (goal: SavingsGoalItemDto) => {
+    const needAmount = Math.max(goal.dailyTarget - goal.todayDepositedAmount, 0);
+    if (needAmount <= 0) return;
+
+    const res = await recordSavingsTransactionAction({
+      goalId: goal.id,
+      type: "deposit",
+      amount: needAmount,
+      date: new Date(),
+      note: `Nạp chỉ tiêu ngày ${new Date().toLocaleDateString("vi-VN")}`,
+    });
+
+    if (res.isSuccess) {
+      loadData();
+    } else {
+      alert(res.error);
+    }
+  };
+
   const handleSubmitTransaction = async (input: SavingsTransactionInput): Promise<boolean> => {
     const res = await recordSavingsTransactionAction(input);
     if (res.isSuccess) {
@@ -162,7 +185,7 @@ export default function SavingsPage() {
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-400 mt-0.5 font-mono">
-              Kế hoạch tích lũy dài hạn, quỹ khẩn cấp 6 tháng và tự động tính toán số tiền cần tiết kiệm mỗi tháng.
+              Đặt mục tiêu nạp mỗi ngày để tích lũy trọn 1 tháng (VD: 100.000 ₫/ngày = 3.000.000 ₫/tháng).
             </p>
           </div>
         </div>
@@ -237,6 +260,7 @@ export default function SavingsPage() {
                 goal={goal}
                 onOpenDeposit={handleOpenDeposit}
                 onOpenWithdraw={handleOpenWithdraw}
+                onQuickDepositToday={handleQuickDepositToday}
                 onEdit={handleEditGoal}
                 onDelete={handleDeleteGoal}
               />

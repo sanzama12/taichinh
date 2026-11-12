@@ -108,6 +108,7 @@ export type BudgetInput = z.infer<typeof BudgetSchema>;
 export const SavingsGoalSchema = z.object({
   name: z.string().trim().min(1, "Tên mục tiêu không được để trống"),
   targetAmount: z.coerce.number().int().positive("Số tiền mục tiêu phải lớn hơn 0"),
+  dailyTarget: z.coerce.number().int().min(0).optional().default(0),
   currentAmount: z.coerce.number().int().min(0, "Số tiền hiện tại không được âm").default(0),
   deadline: z.coerce.date({ required_error: "Vui lòng chọn hạn chót" }),
 });
