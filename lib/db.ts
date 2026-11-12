@@ -50,7 +50,24 @@ export async function connectDB(): Promise<typeof mongoose> {
       .then((mongooseInstance) => {
         return mongooseInstance;
       })
-      .catch((err) => {
+      .catch(async (err) => {
+        // Tự động dự phòng kết nối Local MongoDB nếu Atlas chưa whitelist IP khi chạy dev
+        if (process.env.NODE_ENV !== "production" && MONGODB_URI.includes("mongodb+srv")) {
+          console.warn("⚠️ [DB] MongoDB Atlas chưa được Whitelist IP hoặc đang bảo trì. Tự động chuyển hướng sang MongoDB Local...");
+          try {
+            const localOpts: mongoose.ConnectOptions = {
+              bufferCommands: false,
+              serverSelectionTimeoutMS: 2000,
+              family: 4,
+            };
+            const localInstance = await mongoose.connect("mongodb://127.0.0.1:27017/quanlytaichinh", localOpts);
+            console.log("✅ [DB] Đã kích hoạt kết nối MongoDB Local (port 27017) dự phòng thành công!");
+            return localInstance;
+          } catch (localErr) {
+            console.error("❌ Kết nối MongoDB Local cũng thất bại:", localErr);
+          }
+        }
+
         cached.promise = null;
         console.error("❌ Lỗi kết nối MongoDB:", err);
         throw err;
