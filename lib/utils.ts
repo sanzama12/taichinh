@@ -125,8 +125,19 @@ export function normalize24hTime(rawInput?: string): string {
       return `${String(hour).padStart(2, "0")}:00`;
     }
     if (raw.length === 3) {
-      let hour = parseInt(raw.slice(0, 1), 10);
-      let minute = parseInt(raw.slice(1), 10);
+      let hour: number;
+      let minute: number;
+      if (parseInt(raw[0], 10) > 2) {
+        hour = parseInt(raw[0], 10);
+        minute = parseInt(raw.slice(1), 10);
+      } else {
+        hour = parseInt(raw.slice(0, 2), 10);
+        minute = parseInt(raw.slice(2), 10) * 10;
+        if (hour > 23) {
+          hour = parseInt(raw[0], 10);
+          minute = parseInt(raw.slice(1), 10);
+        }
+      }
       hour = Math.min(Math.max(hour, 0), 23);
       minute = Math.min(Math.max(minute, 0), 59);
       return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
@@ -141,6 +152,106 @@ export function normalize24hTime(rawInput?: string): string {
   }
 
   return raw;
+}
+
+/**
+ * Tự động chèn dấu hai chấm ":" khi gõ giờ (giờ tự :):
+ * - Khi gõ 2 chữ số (VD: 19) -> tự thành "19:"
+ * - Khi gõ tiếp 15 -> tự thành "19:15"
+ * - Hỗ trợ xóa lùi (Backspace) mượt mà không bị kẹt dấu :
+ * - Giữ nguyên nếu người dùng gõ chữ h (VD: 19h)
+ */
+export function formatTimeWithAutoColon(val: string, prevVal = ""): string {
+  // Nếu người dùng bấm Backspace
+  if (prevVal && val.length < prevVal.length) {
+    if (prevVal.endsWith(":") && !val.endsWith(":")) {
+      return val.slice(0, -1);
+    }
+    return val;
+  }
+
+  // Giữ lại ký tự h/H nếu người dùng gõ dạng 19h
+  if (/[hH]/.test(val)) {
+    return val;
+  }
+
+  // Lọc chỉ lấy chữ số
+  const digits = val.replace(/\D/g, "").slice(0, 4);
+  if (!digits) return "";
+
+  if (digits.length === 1) {
+    return digits;
+  }
+
+  if (digits.length === 2) {
+    let hour = parseInt(digits, 10);
+    if (hour > 23) hour = 23;
+    return `${String(hour).padStart(2, "0")}:`;
+  }
+
+  if (digits.length === 3) {
+    if (parseInt(digits[0], 10) > 2) {
+      // 715 -> 07:15
+      const h = parseInt(digits[0], 10);
+      const m = digits.slice(1);
+      return `0${h}:${m}`;
+    }
+    const h = parseInt(digits.slice(0, 2), 10);
+    const validH = Math.min(h, 23);
+    const m = digits.slice(2);
+    return `${String(validH).padStart(2, "0")}:${m}`;
+  }
+
+  if (digits.length === 4) {
+    const h = parseInt(digits.slice(0, 2), 10);
+    const m = parseInt(digits.slice(2, 4), 10);
+    const validH = Math.min(h, 23);
+    const validM = Math.min(m, 59);
+    return `${String(validH).padStart(2, "0")}:${String(validM).padStart(2, "0")}`;
+  }
+
+  return val;
+}
+
+/**
+ * Công thức tính cước Be chuẩn xác (theo thực tế biên lai Be & Thuế TNCN):
+ * - Cước phí đơn hàng trước thuế: C (VD: 35.477 ₫)
+ * - Phí sử dụng dịch vụ (phí sàn): 24.4243% cước trước thuế (VD: 35.477 * 24.4243% = 8.665 ₫)
+ * - Doanh thu sau phí sàn: Cước - Phí sàn (VD: 35.477 - 8.665 = 26.812 ₫)
+ * - Thuế TNCN: 1.5% trên Doanh thu sau phí sàn (VD: 26.812 * 1.5% = 402 ₫)
+ * - Thực nhận tài xế: Cước - Phí sàn - Thuế TNCN (VD: 35.477 - 8.665 - 402 = 26.410 ₫)
+ */
+export function calculateBeFareBreakdown(
+  fareBeforeTax: number,
+  customFee?: number,
+  customTax?: number
+) {
+  const safeFare = Math.max(0, Math.round(fareBeforeTax));
+
+  // Phí sàn: Nếu người dùng truyền customFee thì dùng, ngược lại tự tính 24.4243%
+  const platformFee =
+    customFee !== undefined && customFee >= 0
+      ? Math.round(customFee)
+      : Math.round(safeFare * 0.244243);
+
+  // Doanh thu sau sàn chịu thuế TNCN
+  const taxableIncome = Math.max(0, safeFare - platformFee);
+
+  // Thuế TNCN: 1.5% trên doanh thu sau sàn (hoặc số người dùng tự nhập)
+  const taxTncn =
+    customTax !== undefined && customTax >= 0
+      ? Math.round(customTax)
+      : Math.round(taxableIncome * 0.015);
+
+  // Thực nhận tài xế
+  const driverEarnings = Math.max(0, safeFare - platformFee - taxTncn);
+
+  return {
+    customerFare: safeFare,
+    platformFee,
+    taxTncn,
+    driverEarnings,
+  };
 }
 
 export interface TimeSessionInfo {

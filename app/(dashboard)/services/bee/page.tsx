@@ -32,6 +32,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   formatCurrencyVND,
   normalize24hTime,
+  formatTimeWithAutoColon,
+  calculateBeFareBreakdown,
   getTimeSession,
   cn,
 } from "@/lib/utils";
@@ -312,23 +314,39 @@ function BeeOrdersPageContent() {
   const handleCustomerFareChange = (val: string) => {
     setCustomerFare(val);
     const fareNum = parseInt(val.replace(/\D/g, ""), 10) || 0;
-    const estimatedFee = Math.round(fareNum * 0.262);
-    setPlatformFee(estimatedFee > 0 ? String(estimatedFee) : "");
-    // Thuế TNCN Be: 1.5% doanh thu
-    const estimatedTax = Math.round(fareNum * 0.015);
-    setTaxTncn(estimatedTax > 0 ? String(estimatedTax) : "");
-    const estimatedNet = Math.max(0, fareNum - estimatedFee - estimatedTax);
-    setDriverEarnings(estimatedNet > 0 ? String(estimatedNet) : "");
+    if (fareNum <= 0) {
+      setPlatformFee("");
+      setTaxTncn("");
+      setDriverEarnings("");
+      return;
+    }
+    // Tính chuẩn xác theo quy chế Be: 35.477 -> Phí sàn: 8.665, Thuế TNCN: 402, Thực nhận: 26.410
+    const breakdown = calculateBeFareBreakdown(fareNum);
+    setPlatformFee(String(breakdown.platformFee));
+    setTaxTncn(String(breakdown.taxTncn));
+    setDriverEarnings(String(breakdown.driverEarnings));
   };
 
   const handlePlatformFeeChange = (val: string) => {
     setPlatformFee(val);
-    recalculateEarnings(customerFare, val, taxTncn);
+    const fareNum = parseInt(customerFare.replace(/\D/g, ""), 10) || 0;
+    const feeNum = parseInt(val.replace(/\D/g, ""), 10) || 0;
+    // Thuế TNCN tính 1.5% trên doanh thu sau sàn (Cước - Phí sàn)
+    const taxable = Math.max(0, fareNum - feeNum);
+    const newTax = Math.round(taxable * 0.015);
+    setTaxTncn(newTax > 0 ? String(newTax) : "");
+    const net = Math.max(0, fareNum - feeNum - newTax);
+    setDriverEarnings(net > 0 ? String(net) : "");
   };
 
   const handleTaxTncnChange = (val: string) => {
     setTaxTncn(val);
     recalculateEarnings(customerFare, platformFee, val);
+  };
+
+  const handleTripTimeChange = (val: string) => {
+    const formatted = formatTimeWithAutoColon(val, tripTime);
+    setTripTime(formatted);
   };
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1116,10 +1134,11 @@ function BeeOrdersPageContent() {
                   </div>
                   <input
                     type="text"
+                    inputMode="numeric"
                     required
                     placeholder="19:00 hoặc 7h"
                     value={tripTime}
-                    onChange={(e) => setTripTime(e.target.value)}
+                    onChange={(e) => handleTripTimeChange(e.target.value)}
                     onBlur={() => setTripTime(normalize24hTime(tripTime))}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-amber-300 dark:border-amber-400/40 bg-amber-50/20 dark:bg-amber-500/5 text-xs font-mono font-bold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-hidden"
                   />
@@ -1208,7 +1227,7 @@ function BeeOrdersPageContent() {
                   </label>
                   <input
                     type="text"
-                    placeholder="55000"
+                    placeholder="VD: 35477"
                     required
                     value={customerFare}
                     onChange={(e) => handleCustomerFareChange(e.target.value)}
@@ -1217,12 +1236,13 @@ function BeeOrdersPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Phí sàn (₫)
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                    <span>Phí sàn (₫)</span>
+                    <span className="text-[10px] text-slate-400 font-normal">24.42%</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="14500"
+                    placeholder="VD: 8665"
                     value={platformFee}
                     onChange={(e) => handlePlatformFeeChange(e.target.value)}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs font-mono text-rose-600 focus:border-amber-500 focus:outline-hidden"
@@ -1232,12 +1252,13 @@ function BeeOrdersPageContent() {
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Thuế TNCN (₫)
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                    <span>Thuế TNCN (₫)</span>
+                    <span className="text-[10px] text-slate-400 font-normal">1.5% sau sàn</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="1.5% cước"
+                    placeholder="VD: 402"
                     value={taxTncn}
                     onChange={(e) => handleTaxTncnChange(e.target.value)}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs font-mono text-rose-600 focus:border-amber-500 focus:outline-hidden"

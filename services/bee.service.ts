@@ -3,7 +3,7 @@ import { BeeOrder, IBeeOrder } from "@/models/BeeOrder";
 import { Income } from "@/models/Income";
 import { BonusLog } from "@/models/BonusLog";
 import { User } from "@/models/User";
-import { Result, normalize24hTime } from "@/lib/utils";
+import { Result, normalize24hTime, calculateBeFareBreakdown } from "@/lib/utils";
 import { type BeeOrderInput } from "@/lib/validators";
 import { invalidateDashboardCache } from "@/services/dashboard.service";
 
@@ -213,12 +213,17 @@ export class BeeService {
       await connectDB();
 
       const customerFare = Math.round(input.customerFare);
-      const platformFee = Math.round(input.platformFee || 0);
-      const taxTncn = Math.round(input.taxTncn || 0);
+      const breakdown = calculateBeFareBreakdown(
+        customerFare,
+        input.platformFee,
+        input.taxTncn
+      );
+      const platformFee = breakdown.platformFee;
+      const taxTncn = breakdown.taxTncn;
       const driverEarnings =
         input.driverEarnings !== undefined && input.driverEarnings > 0
           ? Math.round(input.driverEarnings)
-          : Math.max(0, customerFare - platformFee - taxTncn);
+          : breakdown.driverEarnings;
 
       // Lấy vai trò user: nếu Admin thêm thì duyệt ngay, User gửi lên thì chờ Admin xét duyệt
       const userDoc = await User.findById(userId).select("role").lean();
