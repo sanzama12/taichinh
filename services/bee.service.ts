@@ -369,7 +369,8 @@ export class BeeService {
         bonusIncome += Number(b.amount) || 0;
       }
 
-      const revenueThisMonth = beeEarnings + otherIncome + bonusIncome;
+      // Tiền cuốc xe Be là tổng doanh thu riêng biệt (không gộp chung khoản khác hay tiết kiệm)
+      const revenueThisMonth = beeEarnings;
 
       // 4. Lấy số dư ví & tổng tích lũy
       const userDoc = await User.findById(userId)

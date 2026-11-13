@@ -149,13 +149,13 @@ export function TopHeader({
         {canSeeRevenue && revenueData && (
           <Link
             href="/services/bee"
-            title={`Doanh thu tháng này: ${formatCurrencyVND(revenueData.revenueThisMonth)} • Số dư ví: ${formatCurrencyVND(revenueData.walletBalance)}`}
+            title={`Tiền cuốc xe Be tháng này: ${formatCurrencyVND(revenueData.revenueThisMonth)} • Số dư ví: ${formatCurrencyVND(revenueData.walletBalance)}`}
             className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-400/15 hover:bg-amber-400/25 dark:bg-[#FFC700]/15 dark:hover:bg-[#FFC700]/25 border-2 border-[#FFC700] text-xs transition-all shadow-xs group cursor-pointer active:scale-95"
           >
             <BeeIconSvg size={18} variant="square" />
             <div className="flex items-center gap-1">
               <span className="text-[10px] uppercase font-bold text-amber-900 dark:text-amber-300 hidden md:inline">
-                Doanh Thu:
+                Tiền Cuốc:
               </span>
               <span className="font-black font-mono text-[#B45309] dark:text-[#FBBF24] tabular-nums text-xs sm:text-sm">
                 {formatCurrencyVND(revenueData.revenueThisMonth)}

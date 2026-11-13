@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Info, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import { Info, ArrowUpRight, ArrowDownRight, Minus, Fuel, Award, Wallet, DollarSign } from "lucide-react";
 import { type MetricCardData } from "@/services/dashboard.service";
 import { BeeIconSvg } from "@/components/icons/BeeLogo";
-import { FinFlowLogo, BidvLogo, VietcombankLogo } from "@/components/icons/BrandLogos";
+import { formatCurrencyVND } from "@/lib/utils";
 
 interface FinFlowMetricCardsProps {
   metrics: MetricCardData;
@@ -36,220 +36,73 @@ export function FinFlowMetricCards({
   metrics,
   beeSummary,
   fuelSummary,
+  bonusSummary,
 }: FinFlowMetricCardsProps) {
-  // Định dạng tiền tệ với ký hiệu đ phía trước giống chuẩn ảnh mẫu FinFlow (VD: đ125,450,000)
-  const formatFinFlowCurrency = (val: number) => {
-    return `đ${Math.round(val || 0).toLocaleString("en-US")}`;
+  // Định dạng tiền tệ VND chuẩn (VD: 15.450.000 ₫)
+  const formatMoney = (val: number) => {
+    return formatCurrencyVND(val || 0);
   };
 
-  // Tính toán số liệu 100% thời gian thực từ MongoDB - Không chèn dữ liệu ảo
-  const totalBalance = metrics.netRemaining + metrics.totalSavings;
-  const monthlySavings = metrics.netRemaining > 0 ? metrics.netRemaining : 0;
-  const techcombankIncome = metrics.monthlyIncome;
-  const vietcombankExpense = metrics.monthlyExpense;
+  // 1. Tiền cuốc xe Be (Doanh thu thuần từ cuốc xe thực tế, không gộp tiết kiệm hay khoản khác)
+  const tripEarnings = beeSummary ? beeSummary.totalEarnings : 0;
+  const tripTip = beeSummary ? beeSummary.totalTip : 0;
+  const totalTripRevenue = tripEarnings + tripTip;
+  const tripCount = beeSummary ? beeSummary.totalTrips : 0;
 
-  const hasActivity =
-    metrics.monthlyIncome > 0 ||
-    metrics.monthlyExpense > 0 ||
-    metrics.totalSavings > 0 ||
-    metrics.netRemaining !== 0;
+  // 2. Chi phí xăng xe Petrolimex
+  const fuelExpense = fuelSummary && fuelSummary.totalCost > 0
+    ? fuelSummary.totalCost
+    : (metrics.monthlyExpense || 0);
+  const fuelLiters = fuelSummary?.totalLiters || 0;
+  const fuelFills = fuelSummary?.totalFills || 0;
+
+  // 3. Tiền thưởng Be
+  const bonusReceived = bonusSummary?.totalReceived || 0;
+  const bonusPending = bonusSummary?.totalPending || 0;
+
+  // 4. Dòng tiền thực còn lại = (Tiền cuốc + Thưởng) - Chi phí xăng xe (Tuyệt đối KHÔNG gộp tiền tiết kiệm)
+  const netOperatingCashflow = (totalTripRevenue + bonusReceived) - fuelExpense;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* CARD 1: TOTAL BALANCE */}
-      <div className="bg-white dark:bg-[#0c121e] rounded-3xl border-2 border-slate-900/10 dark:border-white/10 border-t-4 border-t-emerald-500 shadow-xs pt-4 px-4 pb-0 flex flex-col justify-between overflow-hidden relative group hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(15,23,42,0.85)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:border-slate-900 dark:hover:border-white transition-all">
-        <div className="space-y-1">
-          {/* Header & Info */}
-          <div className="flex items-center justify-between text-slate-400">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                TOTAL BALANCE
-              </span>
-              <div title="Tổng số dư khả dụng và tài sản tích lũy thực tế" className="cursor-help">
-                <Info className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600 transition-colors" />
-              </div>
-            </div>
-            <FinFlowLogo size={18} variant="square" />
-          </div>
-
-          {/* Value */}
-          <div className="text-2xl sm:text-[26px] font-bold text-slate-900 dark:text-white font-mono tracking-tight tabular-nums">
-            {formatFinFlowCurrency(totalBalance)}
-          </div>
-
-          {/* Subtext */}
-          <div className="flex items-center gap-1 text-[11px] font-semibold">
-            {totalBalance > 0 ? (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
-                +4.2% vs last month
-              </span>
-            ) : totalBalance < 0 ? (
-              <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
-                <ArrowDownRight className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
-                Cảnh báo thâm hụt dòng tiền
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-slate-400">
-                <Minus className="w-3.5 h-3.5 shrink-0" />
-                Chưa có giao dịch • Sẵn sàng nhập
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Edge-to-Edge Sparkline Wave */}
-        <div className="w-full h-12 -mx-4 mt-2 overflow-hidden shrink-0">
-          <svg
-            className="w-full h-full block"
-            viewBox="0 0 100 30"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <linearGradient id="sparkGrad1" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={totalBalance > 0 ? 0.28 : 0.08} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-              </linearGradient>
-            </defs>
-            <path
-              d={
-                totalBalance > 0
-                  ? "M 0 25 C 20 22, 35 26, 50 18 C 65 10, 80 15, 100 6 L 100 30 L 0 30 Z"
-                  : "M 0 26 C 25 26, 50 26, 75 26, 100 26 L 100 30 L 0 30 Z"
-              }
-              fill="url(#sparkGrad1)"
-            />
-            <path
-              d={
-                totalBalance > 0
-                  ? "M 0 25 C 20 22, 35 26, 50 18 C 65 10, 80 15, 100 6"
-                  : "M 0 26 C 25 26, 50 26, 75 26, 100 26"
-              }
-              fill="none"
-              stroke="#10b981"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      </div>
-
-      {/* CARD 2: MONTHLY SAVINGS */}
-      <div className="bg-white dark:bg-[#0c121e] rounded-3xl border-2 border-slate-900/10 dark:border-white/10 border-t-4 border-t-blue-500 shadow-xs pt-4 px-4 pb-0 flex flex-col justify-between overflow-hidden relative group hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(15,23,42,0.85)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:border-slate-900 dark:hover:border-white transition-all">
-        <div className="space-y-1">
-          {/* Header & Info */}
-          <div className="flex items-center justify-between text-slate-400">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                MONTHLY SAVINGS
-              </span>
-              <div title="Mức tiết kiệm & thặng dư dòng tiền trong kỳ" className="cursor-help">
-                <Info className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600 transition-colors" />
-              </div>
-            </div>
-            <BidvLogo size={18} variant="square" />
-          </div>
-
-          {/* Value */}
-          <div className="text-2xl sm:text-[26px] font-bold text-slate-900 dark:text-white font-mono tracking-tight tabular-nums">
-            {formatFinFlowCurrency(monthlySavings)}
-          </div>
-
-          {/* Subtext with Green Arrow */}
-          <div className="flex items-center gap-1 text-[11px] font-semibold">
-            {monthlySavings > 0 ? (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
-                +{metrics.savingsRatePercent}% vs last month
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-slate-400">
-                <Minus className="w-3.5 h-3.5 shrink-0" />
-                Mục tiêu tích lũy: {metrics.targetSavingsRatePercent}%
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Edge-to-Edge Sparkline Wave */}
-        <div className="w-full h-12 -mx-4 mt-2 overflow-hidden shrink-0">
-          <svg
-            className="w-full h-full block"
-            viewBox="0 0 100 30"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <linearGradient id="sparkGrad2" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={monthlySavings > 0 ? 0.28 : 0.08} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-              </linearGradient>
-            </defs>
-            <path
-              d={
-                monthlySavings > 0
-                  ? "M 0 28 C 15 27, 30 20, 48 19 C 65 18, 80 14, 100 9 L 100 30 L 0 30 Z"
-                  : "M 0 26 C 25 26, 50 26, 75 26, 100 26 L 100 30 L 0 30 Z"
-              }
-              fill="url(#sparkGrad2)"
-            />
-            <path
-              d={
-                monthlySavings > 0
-                  ? "M 0 28 C 15 27, 30 20, 48 19 C 65 18, 80 14, 100 9"
-                  : "M 0 26 C 25 26, 50 26, 75 26, 100 26"
-              }
-              fill="none"
-              stroke="#10b981"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      </div>
-
-      {/* CARD 3: TECHCOMBANK (DOANH THU & ĐƠN BE) */}
+      {/* CARD 1: TỔNG TIỀN CUỐC XE BE (DOANH THU THỰC RIÊNG BIỆT) */}
       <div className="bg-white dark:bg-[#0c121e] rounded-3xl border-2 border-slate-900/10 dark:border-white/10 border-t-4 border-t-[#FFC700] shadow-xs pt-4 px-4 pb-0 flex flex-col justify-between overflow-hidden relative group hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(15,23,42,0.85)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:border-slate-900 dark:hover:border-white transition-all">
         <div className="space-y-1">
           {/* Header & Info */}
           <div className="flex items-center justify-between text-slate-400">
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                TECHCOMBANK (ĐƠN BE)
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                TỔNG TIỀN CUỐC (BE)
               </span>
-              <div title="Tài khoản Techcombank & Doanh thu dịch vụ (Đơn Be, Thưởng)" className="cursor-help">
+              <div title="Tổng doanh thu thuần từ các cuốc xe Be tháng này (đã trừ phí sàn và thuế TNCN). Độc lập, không gộp tiền tiết kiệm." className="cursor-help">
                 <Info className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600 transition-colors" />
               </div>
             </div>
-            <BeeIconSvg size={18} variant="square" />
+            <BeeIconSvg size={20} variant="square" />
           </div>
 
           {/* Value */}
-          <div className="text-2xl sm:text-[26px] font-bold text-slate-900 dark:text-white font-mono tracking-tight tabular-nums">
-            {formatFinFlowCurrency(techcombankIncome)}
+          <div className="text-2xl sm:text-[26px] font-black text-slate-900 dark:text-white font-mono tracking-tight tabular-nums">
+            {formatMoney(totalTripRevenue)}
           </div>
 
-          {/* Subtext with Green Arrow & Be Logo */}
-          <div className="flex items-center gap-1 text-[11px] font-semibold">
-            {beeSummary && beeSummary.totalEarnings > 0 ? (
-              <span className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-bold">
+          {/* Subtext */}
+          <div className="flex items-center gap-1 text-[11px] font-bold">
+            {tripCount > 0 ? (
+              <span className="flex items-center gap-1 text-amber-700 dark:text-amber-300">
                 <ArrowUpRight className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
-                <span>{beeSummary.totalTrips} cuốc Be ({formatFinFlowCurrency(beeSummary.totalEarnings)})</span>
-              </span>
-            ) : techcombankIncome > 0 ? (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
-                +2.1% vs last month
+                <span>{tripCount} cuốc hoàn thành{tripTip > 0 ? ` (+${formatMoney(tripTip)} tip)` : ""}</span>
               </span>
             ) : (
               <span className="flex items-center gap-1 text-slate-400">
                 <Minus className="w-3.5 h-3.5 shrink-0" />
-                0 giao dịch phát sinh
+                Chưa có cuốc xe nào trong tháng
               </span>
             )}
           </div>
         </div>
 
-        {/* Edge-to-Edge Sparkline Wave */}
+        {/* Edge-to-Edge Sparkline Wave Amber */}
         <div className="w-full h-12 -mx-4 mt-2 overflow-hidden shrink-0">
           <svg
             className="w-full h-full block"
@@ -257,77 +110,74 @@ export function FinFlowMetricCards({
             preserveAspectRatio="none"
           >
             <defs>
-              <linearGradient id="sparkGrad3" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={techcombankIncome > 0 ? 0.28 : 0.08} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+              <linearGradient id="sparkGradTrip" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#FFC700" stopOpacity={totalTripRevenue > 0 ? 0.35 : 0.08} />
+                <stop offset="100%" stopColor="#FFC700" stopOpacity="0.0" />
               </linearGradient>
             </defs>
             <path
               d={
-                techcombankIncome > 0
-                  ? "M 0 26 C 25 24, 40 28, 55 16 C 70 8, 85 14, 100 8 L 100 30 L 0 30 Z"
+                totalTripRevenue > 0
+                  ? "M 0 25 C 20 20, 35 24, 50 14 C 65 8, 80 12, 100 4 L 100 30 L 0 30 Z"
                   : "M 0 26 C 25 26, 50 26, 75 26, 100 26 L 100 30 L 0 30 Z"
               }
-              fill="url(#sparkGrad3)"
+              fill="url(#sparkGradTrip)"
             />
             <path
               d={
-                techcombankIncome > 0
-                  ? "M 0 26 C 25 24, 40 28, 55 16 C 70 8, 85 14, 100 8"
+                totalTripRevenue > 0
+                  ? "M 0 25 C 20 20, 35 24, 50 14 C 65 8, 80 12, 100 4"
                   : "M 0 26 C 25 26, 50 26, 75 26, 100 26"
               }
               fill="none"
-              stroke="#10b981"
-              strokeWidth="1.8"
+              stroke="#F59E0B"
+              strokeWidth="2"
               strokeLinecap="round"
             />
           </svg>
         </div>
       </div>
 
-      {/* CARD 4: VIETCOMBANK (CHI PHÍ XĂNG & NỢ) */}
-      <div className="bg-white dark:bg-[#0c121e] rounded-3xl border-2 border-slate-900/10 dark:border-white/10 border-t-4 border-t-rose-500 shadow-xs pt-4 px-4 pb-0 flex flex-col justify-between overflow-hidden relative group hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(15,23,42,0.85)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:border-slate-900 dark:hover:border-white transition-all">
+      {/* CARD 2: CHI PHÍ XĂNG XE PETROLIMEX */}
+      <div className="bg-white dark:bg-[#0c121e] rounded-3xl border-2 border-slate-900/10 dark:border-white/10 border-t-4 border-t-orange-500 shadow-xs pt-4 px-4 pb-0 flex flex-col justify-between overflow-hidden relative group hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(15,23,42,0.85)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:border-slate-900 dark:hover:border-white transition-all">
         <div className="space-y-1">
           {/* Header & Info */}
           <div className="flex items-center justify-between text-slate-400">
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                VIETCOMBANK
+              <span className="text-[11px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                XĂNG XE PETROLIMEX
               </span>
-              <div title="Tài khoản Vietcombank & Chi phí vận hành (Xăng xe, trả nợ)" className="cursor-help">
+              <div title="Chi phí đổ xăng xe máy phục vụ chạy Be trong tháng" className="cursor-help">
                 <Info className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600 transition-colors" />
               </div>
             </div>
-            <VietcombankLogo size={18} variant="square" />
+            <div className="w-5 h-5 rounded-md bg-orange-100 dark:bg-orange-500/20 text-orange-600 flex items-center justify-center font-bold">
+              <Fuel className="w-3.5 h-3.5" />
+            </div>
           </div>
 
           {/* Value */}
-          <div className="text-2xl sm:text-[26px] font-bold text-slate-900 dark:text-white font-mono tracking-tight tabular-nums">
-            {formatFinFlowCurrency(vietcombankExpense)}
+          <div className="text-2xl sm:text-[26px] font-black text-slate-900 dark:text-white font-mono tracking-tight tabular-nums">
+            {formatMoney(fuelExpense)}
           </div>
 
-          {/* Subtext with Green Arrow */}
-          <div className="flex items-center gap-1 text-[11px] font-semibold">
-            {fuelSummary && fuelSummary.totalCost > 0 ? (
+          {/* Subtext */}
+          <div className="flex items-center gap-1 text-[11px] font-bold">
+            {fuelFills > 0 ? (
               <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
                 <ArrowUpRight className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
-                {fuelSummary.totalFills} lần đổ xăng ({fuelSummary.totalLiters} L)
-              </span>
-            ) : vietcombankExpense > 0 ? (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
-                +8.0% vs last month
+                {fuelFills} lần đổ xăng ({fuelLiters} Lít)
               </span>
             ) : (
               <span className="flex items-center gap-1 text-slate-400">
                 <Minus className="w-3.5 h-3.5 shrink-0" />
-                0 chi phí phát sinh
+                Chưa ghi nhận chi phí xăng
               </span>
             )}
           </div>
         </div>
 
-        {/* Edge-to-Edge Sparkline Wave */}
+        {/* Edge-to-Edge Sparkline Wave Orange */}
         <div className="w-full h-12 -mx-4 mt-2 overflow-hidden shrink-0">
           <svg
             className="w-full h-full block"
@@ -335,28 +185,183 @@ export function FinFlowMetricCards({
             preserveAspectRatio="none"
           >
             <defs>
-              <linearGradient id="sparkGrad4" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={vietcombankExpense > 0 ? 0.28 : 0.08} />
+              <linearGradient id="sparkGradFuel" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#F97316" stopOpacity={fuelExpense > 0 ? 0.3 : 0.08} />
+                <stop offset="100%" stopColor="#F97316" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path
+              d={
+                fuelExpense > 0
+                  ? "M 0 27 C 20 24, 38 18, 55 17 C 72 16, 85 10, 100 8 L 100 30 L 0 30 Z"
+                  : "M 0 26 C 25 26, 50 26, 75 26, 100 26 L 100 30 L 0 30 Z"
+              }
+              fill="url(#sparkGradFuel)"
+            />
+            <path
+              d={
+                fuelExpense > 0
+                  ? "M 0 27 C 20 24, 38 18, 55 17 C 72 16, 85 10, 100 8"
+                  : "M 0 26 C 25 26, 50 26, 75 26, 100 26"
+              }
+              fill="none"
+              stroke="#EA580C"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* CARD 3: TIỀN THƯỞNG BE */}
+      <div className="bg-white dark:bg-[#0c121e] rounded-3xl border-2 border-slate-900/10 dark:border-white/10 border-t-4 border-t-sky-500 shadow-xs pt-4 px-4 pb-0 flex flex-col justify-between overflow-hidden relative group hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(15,23,42,0.85)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:border-slate-900 dark:hover:border-white transition-all">
+        <div className="space-y-1">
+          {/* Header & Info */}
+          <div className="flex items-center justify-between text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                TIỀN THƯỞNG BE
+              </span>
+              <div title="Tiền thưởng mốc cuốc, thưởng nóng, thưởng tuần từ ứng dụng Be" className="cursor-help">
+                <Info className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600 transition-colors" />
+              </div>
+            </div>
+            <div className="w-5 h-5 rounded-md bg-sky-100 dark:bg-sky-500/20 text-sky-600 flex items-center justify-center font-bold">
+              <Award className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          {/* Value */}
+          <div className="text-2xl sm:text-[26px] font-black text-slate-900 dark:text-white font-mono tracking-tight tabular-nums">
+            {formatMoney(bonusReceived)}
+          </div>
+
+          {/* Subtext */}
+          <div className="flex items-center gap-1 text-[11px] font-bold">
+            {bonusReceived > 0 ? (
+              <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400">
+                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
+                {bonusPending > 0 ? `Đã nhận • Còn chờ ${formatMoney(bonusPending)}` : "Đã nhận về ví tài xế"}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-slate-400">
+                <Minus className="w-3.5 h-3.5 shrink-0" />
+                Chưa có tiền thưởng tháng này
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Edge-to-Edge Sparkline Wave Sky */}
+        <div className="w-full h-12 -mx-4 mt-2 overflow-hidden shrink-0">
+          <svg
+            className="w-full h-full block"
+            viewBox="0 0 100 30"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="sparkGradBonus" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#0284C7" stopOpacity={bonusReceived > 0 ? 0.3 : 0.08} />
+                <stop offset="100%" stopColor="#0284C7" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path
+              d={
+                bonusReceived > 0
+                  ? "M 0 26 C 25 24, 40 28, 55 16 C 70 8, 85 14, 100 8 L 100 30 L 0 30 Z"
+                  : "M 0 26 C 25 26, 50 26, 75 26, 100 26 L 100 30 L 0 30 Z"
+              }
+              fill="url(#sparkGradBonus)"
+            />
+            <path
+              d={
+                bonusReceived > 0
+                  ? "M 0 26 C 25 24, 40 28, 55 16 C 70 8, 85 14, 100 8"
+                  : "M 0 26 C 25 26, 50 26, 75 26, 100 26"
+              }
+              fill="none"
+              stroke="#0284C7"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* CARD 4: DÒNG TIỀN THỰC CÒN LẠI (TIỀN CUỐC + THƯỞNG - XĂNG, KHÔNG GỘP TIẾT KIỆM) */}
+      <div className="bg-white dark:bg-[#0c121e] rounded-3xl border-2 border-slate-900/10 dark:border-white/10 border-t-4 border-t-emerald-500 shadow-xs pt-4 px-4 pb-0 flex flex-col justify-between overflow-hidden relative group hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(15,23,42,0.85)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:border-slate-900 dark:hover:border-white transition-all">
+        <div className="space-y-1">
+          {/* Header & Info */}
+          <div className="flex items-center justify-between text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                THỰC CÒN LẠI (TÚI TÀI XẾ)
+              </span>
+              <div title="Thực tế tiền túi tài xế còn lại sau khi lấy (Tiền cuốc xe + Thưởng) trừ đi Chi phí xăng. Tuyệt đối không gộp tiền tiết kiệm vào đây." className="cursor-help">
+                <Info className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600 transition-colors" />
+              </div>
+            </div>
+            <div className="w-5 h-5 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center font-bold">
+              <Wallet className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          {/* Value */}
+          <div className="text-2xl sm:text-[26px] font-black text-slate-900 dark:text-white font-mono tracking-tight tabular-nums">
+            {formatMoney(netOperatingCashflow)}
+          </div>
+
+          {/* Subtext */}
+          <div className="flex items-center gap-1 text-[11px] font-bold">
+            {netOperatingCashflow > 0 ? (
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
+                Dòng tiền dương • Tiền cuốc sạch
+              </span>
+            ) : netOperatingCashflow < 0 ? (
+              <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
+                <ArrowDownRight className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
+                Xăng vượt quá doanh thu cuốc
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-slate-400">
+                <Minus className="w-3.5 h-3.5 shrink-0" />
+                Cân bằng 0 ₫
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Edge-to-Edge Sparkline Wave Emerald */}
+        <div className="w-full h-12 -mx-4 mt-2 overflow-hidden shrink-0">
+          <svg
+            className="w-full h-full block"
+            viewBox="0 0 100 30"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="sparkGradNet" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity={netOperatingCashflow > 0 ? 0.35 : 0.08} />
                 <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
               </linearGradient>
             </defs>
             <path
               d={
-                vietcombankExpense > 0
-                  ? "M 0 27 C 20 25, 38 18, 55 17 C 72 16, 85 9, 100 7 L 100 30 L 0 30 Z"
+                netOperatingCashflow > 0
+                  ? "M 0 28 C 15 27, 30 20, 48 19 C 65 18, 80 12, 100 6 L 100 30 L 0 30 Z"
                   : "M 0 26 C 25 26, 50 26, 75 26, 100 26 L 100 30 L 0 30 Z"
               }
-              fill="url(#sparkGrad4)"
+              fill="url(#sparkGradNet)"
             />
             <path
               d={
-                vietcombankExpense > 0
-                  ? "M 0 27 C 20 25, 38 18, 55 17 C 72 16, 85 9, 100 7"
+                netOperatingCashflow > 0
+                  ? "M 0 28 C 15 27, 30 20, 48 19 C 65 18, 80 12, 100 6"
                   : "M 0 26 C 25 26, 50 26, 75 26, 100 26"
               }
               fill="none"
-              stroke="#10b981"
-              strokeWidth="1.8"
+              stroke="#059669"
+              strokeWidth="2"
               strokeLinecap="round"
             />
           </svg>
