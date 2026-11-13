@@ -101,8 +101,13 @@ export default function IncomePage() {
         </div>
       </div>
 
-      {/* Thẻ Ví Thu Nhập Riêng Của User */}
-      {wallet && <UserIncomeWalletCard wallet={wallet} />}
+      {/* Thẻ Ví Thu Nhập Riêng Của User & Rút Tiền */}
+      {wallet && (
+        <UserIncomeWalletCard
+          wallet={wallet}
+          onWalletUpdated={() => loadData()}
+        />
+      )}
 
       {/* 4 Cards Thống Kê Doanh Thu */}
       <IncomeSummaryCards summary={summary} />

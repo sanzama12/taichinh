@@ -16,6 +16,7 @@ export interface JsonDatabaseStructure {
   bonusLogs: any[];
   debts: any[];
   supportTickets: any[];
+  withdrawals: any[];
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -56,6 +57,7 @@ function loadDatabaseFromFile(): JsonDatabaseStructure {
           bonusLogs: parsed.bonusLogs || [],
           debts: parsed.debts || [],
           supportTickets: parsed.supportTickets || [],
+          withdrawals: parsed.withdrawals || [],
         };
       }
     }
@@ -522,6 +524,7 @@ export const jsonDb = {
   bonusLogs: new JsonCollection("bonusLogs"),
   debts: new JsonCollection("debts"),
   supportTickets: new JsonCollection("supportTickets"),
+  withdrawals: new JsonCollection("withdrawals"),
 };
 
 export function isJsonDbActive(): boolean {
@@ -577,5 +580,6 @@ function createInitialSeedData(): JsonDatabaseStructure {
     bonusLogs: [],
     debts: [],
     supportTickets: [],
+    withdrawals: [],
   };
 }

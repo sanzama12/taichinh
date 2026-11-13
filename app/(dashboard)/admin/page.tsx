@@ -66,6 +66,7 @@ import {
   BeExpressIcon,
   BeEconomyIcon,
   BeCorporateIcon,
+  BeFoodIcon,
 } from "@/components/icons/BeeLogo";
 import { triggerRealtimeSync, EVENT_NAME } from "@/lib/realtime-sync";
 import { getTimeSession, cn } from "@/lib/utils";
@@ -100,9 +101,9 @@ const PERMISSION_FEATURES: PermissionFeatureMeta[] = [
   },
   {
     key: "services_bee",
-    label: "Dịch Vụ Đơn Be (4 Dịch Vụ)",
+    label: "Dịch Vụ Đơn Be (5 Dịch Vụ)",
     category: "Dịch Vụ",
-    description: "beBike, be Siêu Tốc, be Tiết Kiệm, be Doanh Nghiệp",
+    description: "beBike, be Siêu Tốc, be Tiết Kiệm, be Doanh Nghiệp, beFood",
     badge: "BE BIKE",
   },
   {
@@ -697,11 +698,24 @@ function AdminUnifiedHubContent() {
             <span>be Tiết Kiệm</span>
           </span>
         );
-      default:
+      case "beDeliveryCorporate":
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30">
             <BeCorporateIcon size={12} />
             <span>be Doanh Nghiệp</span>
+          </span>
+        );
+      case "beFood":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300 border border-orange-200 dark:border-orange-500/30">
+            <BeFoodIcon size={12} />
+            <span>beFood</span>
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300 border border-slate-200">
+            <span>{type}</span>
           </span>
         );
     }

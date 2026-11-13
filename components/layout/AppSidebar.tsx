@@ -40,6 +40,7 @@ import {
   BeExpressIcon,
   BeEconomyIcon,
   BeCorporateIcon,
+  BeFoodIcon,
 } from "@/components/icons/BeeLogo";
 import {
   PetrolimexLogo,
@@ -414,6 +415,29 @@ export function AppSidebar({
                               <span className="truncate">be Doanh Nghiệp</span>
                               <span className="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-indigo-600 text-white shrink-0">
                                 DOANH NGHIỆP
+                              </span>
+                            </span>
+                          )}
+                        </Link>
+
+                        {/* Mục 5: beFood (Giao Đồ Ăn) */}
+                        <Link
+                          href="/services/bee?type=beFood"
+                          title="Dịch vụ beFood (Giao Đồ Ăn & Thức Uống)"
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all ${
+                            isCollapsed ? "justify-center" : ""
+                          } ${
+                            pathname === "/services/bee" && activeBeeType === "beFood"
+                              ? "bg-orange-500/15 text-orange-900 dark:text-orange-300 border border-orange-500/40 font-bold shadow-2xs"
+                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-white/5"
+                          }`}
+                        >
+                          <BeFoodIcon size={18} />
+                          {!isCollapsed && (
+                            <span className="flex items-center justify-between flex-1 min-w-0">
+                              <span className="truncate">beFood</span>
+                              <span className="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-orange-500 text-white shrink-0">
+                                ĐỒ ĂN
                               </span>
                             </span>
                           )}

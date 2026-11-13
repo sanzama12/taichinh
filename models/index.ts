@@ -12,3 +12,4 @@ export * from "./FuelLog";
 export * from "./BonusLog";
 export * from "./Debt";
 export * from "./SupportTicket";
+export * from "./Withdrawal";

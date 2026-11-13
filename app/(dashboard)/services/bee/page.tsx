@@ -57,6 +57,7 @@ import {
   BeExpressIcon,
   BeEconomyIcon,
   BeCorporateIcon,
+  BeFoodIcon,
 } from "@/components/icons/BeeLogo";
 
 function BeeOrdersSkeleton() {
@@ -158,6 +159,7 @@ function BeeOrdersPageContent() {
           "beDeliveryExpress",
           "beDeliveryEconomy",
           "beDeliveryCorporate",
+          "beFood",
         ].includes(paramType)
       ) {
         setServiceType(paramType as BeeServiceType);
@@ -197,6 +199,7 @@ function BeeOrdersPageContent() {
   const expressOrders = orders.filter((o) => o.serviceType === "beDeliveryExpress");
   const economyOrders = orders.filter((o) => o.serviceType === "beDeliveryEconomy");
   const corporateOrders = orders.filter((o) => o.serviceType === "beDeliveryCorporate");
+  const foodOrders = orders.filter((o) => o.serviceType === "beFood");
 
   const displayOrders = React.useMemo(() => {
     if (selectedTab === "all") return orders;
@@ -295,6 +298,7 @@ function BeeOrdersPageContent() {
         "beDeliveryExpress",
         "beDeliveryEconomy",
         "beDeliveryCorporate",
+        "beFood",
       ].includes(tabId)
     ) {
       setServiceType(tabId as BeeServiceType);
@@ -545,8 +549,8 @@ function BeeOrdersPageContent() {
         );
       case "beFood":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300 border border-orange-200">
-            <Utensils className="w-3 h-3 text-orange-600" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300 border border-orange-200 dark:border-orange-500/30">
+            <BeFoodIcon size={13} />
             <span>beFood</span>
           </span>
         );
@@ -596,6 +600,14 @@ function BeeOrdersPageContent() {
       activeClass:
         "bg-indigo-600 text-white border-indigo-700 font-bold shadow-xs",
     },
+    {
+      id: "beFood",
+      label: "beFood",
+      count: foodOrders.length,
+      icon: <BeFoodIcon size={15} />,
+      activeClass:
+        "bg-orange-500 text-white border-orange-600 font-bold shadow-xs",
+    },
   ];
 
   return (
@@ -629,8 +641,13 @@ function BeeOrdersPageContent() {
         </button>
       </div>
 
-      {/* 1.5. Thẻ Ví Thu Nhập Riêng Của User */}
-      {wallet && <UserIncomeWalletCard wallet={wallet} />}
+      {/* 1.5. Thẻ Ví Thu Nhập Riêng Của User & Rút Tiền */}
+      {wallet && (
+        <UserIncomeWalletCard
+          wallet={wallet}
+          onWalletUpdated={() => loadData(month, year)}
+        />
+      )}
 
       {/* 2. Control Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-white/10 shadow-xs">
@@ -1123,6 +1140,7 @@ function BeeOrdersPageContent() {
                     <option value="beDeliveryExpress">⚡ be Siêu Tốc</option>
                     <option value="beDeliveryEconomy">📦 be Tiết Kiệm</option>
                     <option value="beDeliveryCorporate">🏢 be Doanh Nghiệp</option>
+                    <option value="beFood">🍔 beFood (Giao Đồ Ăn)</option>
                   </select>
                 </div>
               )}

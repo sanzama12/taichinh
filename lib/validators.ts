@@ -238,3 +238,24 @@ export const AdminUpdateUserSchema = AdminUserBaseSchema.extend({
   isActive: z.boolean(),
 });
 export type AdminUpdateUserInput = z.infer<typeof AdminUpdateUserSchema>;
+
+/**
+ * Schema Rút Tiền Từ Ví Thu Nhập (Withdrawal)
+ */
+export const WithdrawalSchema = z.object({
+  amount: z.coerce
+    .number()
+    .int("Số tiền rút phải là số nguyên")
+    .min(10000, "Số tiền rút tối thiểu là 10.000 ₫"),
+  bankName: z.string().trim().min(2, "Vui lòng chọn hoặc nhập ngân hàng thụ hưởng"),
+  bankAccount: z.string().trim().min(4, "Số tài khoản ngân hàng không hợp lệ").max(30),
+  accountHolder: z
+    .string()
+    .trim()
+    .min(2, "Vui lòng nhập tên chủ tài khoản")
+    .max(80)
+    .transform((val) => val.toUpperCase()),
+  note: z.string().trim().max(200, "Ghi chú tối đa 200 ký tự").optional(),
+  saveBankInfo: z.boolean().optional().default(true),
+});
+export type WithdrawalInput = z.infer<typeof WithdrawalSchema>;

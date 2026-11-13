@@ -14,6 +14,7 @@ import {
   MessageSquare,
   User as UserIcon,
   CheckCircle2,
+  Wallet,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NotificationBell } from "@/components/layout/NotificationBell";
@@ -245,6 +246,15 @@ export function TopHeader({
                       <span>Trung Tâm Quản Trị (Admin Hub)</span>
                     </Link>
                   )}
+
+                  <Link
+                    href="/services/bee"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-600 dark:text-amber-400 font-bold hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+                  >
+                    <Wallet className="w-4 h-4 text-amber-500" />
+                    <span>Ví Thu Nhập & Rút Tiền</span>
+                  </Link>
 
                   <Link
                     href="/tickets"

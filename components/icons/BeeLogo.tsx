@@ -187,4 +187,35 @@ export function BeCorporateIcon({ size = 18, className = "" }: { size?: number; 
   );
 }
 
+/**
+ * 5. LOGO DỊCH VỤ beFood (Giao đồ ăn & Thức uống)
+ */
+export function BeFoodIcon({ size = 18, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`shrink-0 select-none ${className}`}
+    >
+      <rect width="24" height="24" rx="5" fill="#F97316" />
+      <path
+        d="M6 14h12M7.5 14v1.5a4.5 4.5 0 0 0 9 0V14M6.5 11c0-3 2.5-5 5.5-5s5.5 2 5.5 5H6.5z"
+        stroke="#FFFFFF"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 4v2"
+        stroke="#FFFFFF"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 

@@ -12,6 +12,12 @@ export interface IUserSettings {
   currency: "VND";
 }
 
+export interface IUserBankInfo {
+  bankName?: string;
+  bankAccount?: string;
+  accountHolder?: string;
+}
+
 export interface IUser {
   _id: mongoose.Types.ObjectId;
   name: string;
@@ -28,6 +34,7 @@ export interface IUser {
   walletCode?: string;
   walletName?: string;
   walletBalance?: number;
+  bankInfo?: IUserBankInfo;
   settings: IUserSettings;
   permissions?: IUserPermissions;
   createdAt: Date;
@@ -104,6 +111,11 @@ const UserSchema = new Schema<IUser>(
     walletBalance: {
       type: Number,
       default: 0,
+    },
+    bankInfo: {
+      bankName: { type: String, trim: true },
+      bankAccount: { type: String, trim: true },
+      accountHolder: { type: String, trim: true },
     },
     settings: {
       savingsRatePercent: {
